@@ -2,7 +2,7 @@
 name: brutal-deepresearch
 description: Structured deep research pipeline with confirmation gates and resume support. Generates outline, launches parallel research agents, produces validated JSON results and markdown report.
 user-invocable: true
-allowed-tools: Bash(ls:*), Bash(date:*), Bash(mkdir:*), Bash(rm:*), Bash(python:*), Read, Write, Edit, Glob, Grep, WebSearch, Task, AskUserQuestion
+allowed-tools: Bash(ls:*), Bash(date:*), Bash(mkdir:*), Bash(rm:*), Bash(python:*), Bash(sleep:*), Bash(wc:*), Read, Write, Edit, Glob, Grep, WebSearch, Task, AskUserQuestion
 ---
 
 Structured deep research pipeline with confirmation gates and resume support. Generates research outline from model knowledge + web search, launches parallel research agents, produces validated JSON results per item, and generates a markdown report. Supports resuming interrupted sessions.
@@ -141,7 +141,7 @@ Use AskUserQuestion to ask for time range:
 
 ### 3.2 Launch Web Search Agent
 
-Launch 1 web-search-agent (background) using the Task tool with `model: sonnet`.
+Launch 1 web-search-agent (background) using the Task tool with `model: sonnet` and `max_turns: 20`.
 
 **Parameter Retrieval**:
 - `{topic}`: User's research topic
@@ -347,9 +347,13 @@ Calculate:
 
 ## Step 6: Execute Deep Research
 
-### 6.1 Launch All Agents
+### 6.1 Launch Research Agents
 
-Launch ALL remaining agents in parallel using the Task tool with `model: sonnet` and `run_in_background: true`. No batching, no inter-batch approval. Fire them all at once.
+Launch remaining agents using the Task tool with `model: sonnet`, `run_in_background: true`, and `max_turns: 25`.
+
+**Batching strategy** based on remaining item count:
+- **10 or fewer items**: Launch ALL agents in a single parallel batch.
+- **More than 10 items**: Split into batches of 10. Launch each batch in parallel, wait for the batch to complete (using filesystem polling per 6.4), then launch the next batch. No inter-batch user approval needed — batching is automatic.
 
 Each agent researches one item and outputs JSON for that item.
 
@@ -509,15 +513,28 @@ items:
 
 Items that were already completed (skipped) should not be listed — only items that agents were launched for.
 
-### 6.4 Monitor Progress
+### 6.4 Monitor Progress (Filesystem-Based)
 
-After writing progress.yaml:
-1. Wait for all agents to complete
-2. Display progress as agents finish: "Agent complete: <item name>. Progress: X/Y items done."
-3. After all agents complete, update `progress.yaml`:
+**CRITICAL**: Do NOT use TaskOutput to read agent results. Agent outputs are large (extensive web search transcripts) and reading them into the orchestrator context will cause context window exhaustion. All research results are already persisted to disk as JSON files — the orchestrator only needs to check file existence.
+
+**Polling loop** — repeat until all items are resolved:
+
+1. Check completion status via filesystem:
+   ```bash
+   ls <session_path>/results/*.json 2>/dev/null | wc -l
+   ls <session_path>/results/*.started 2>/dev/null | wc -l
+   ```
+2. Calculate: `completed` = count of `.json` files, `in_progress` = count of `.started` files without matching `.json`, `remaining` = total - completed
+3. Display progress: "Progress: X/Y items completed, Z still running."
+4. If `in_progress > 0`, wait ~30 seconds (use `sleep 30` via Bash) then poll again
+5. If `in_progress == 0` (all agents have finished — either produced `.json` or exited), exit the loop
+
+**After polling loop completes:**
+1. Update `progress.yaml`:
    - Set each item's status to `completed` if its `.json` file exists, or `failed` if only `.started` exists or neither exists
    - Set overall `status` to `completed` if all items done, or `partial` if some are missing
-4. Report final status: "All agents complete. X/Y items researched successfully."
+2. Report final status: "All agents complete. X/Y items researched successfully."
+3. If any items failed, list them and suggest using resume mode to retry
 
 ---
 
@@ -743,6 +760,8 @@ Do not:
 - Launch research agents before user confirms the outline
 - Generate files before Gate 2 confirmation
 - Generate reports before Gate 3 confirmation
+- Use TaskOutput to read research agent results (causes context exhaustion — use filesystem polling instead)
+- Launch more than 10 agents simultaneously (use automatic batching for larger sets)
 
 Do:
 - Generate comprehensive initial frameworks from domain knowledge
