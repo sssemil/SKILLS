@@ -542,14 +542,16 @@ Items that were already completed (skipped) should not be listed — only items 
 
 ### 7.1 Scan Summary Fields
 
-Read all completed JSON results and identify fields suitable for TOC display:
+**Context budget**: Read only 2-3 sample JSON results (not all of them) to identify the field structure and available fields. The results share a common schema defined by `fields.yaml`, so a small sample is sufficient.
+
+Identify fields suitable for TOC display:
 - Numeric fields (stars, scores, citations)
 - Short metric fields (dates, versions, ratings)
-- Fields that appear across most/all items
+- Fields with brief `detail_level` in fields.yaml
 
 ### 7.2 Present Options
 
-Present a dynamic options list based on actual fields found in the JSON results.
+Present a dynamic options list based on fields found in the sample JSON results and fields.yaml definitions.
 
 ---
 
@@ -568,6 +570,8 @@ Use AskUserQuestion to ask:
 ## Step 8: Generate Report
 
 ### 8.1 Generate Report Script
+
+**Context budget**: To understand the JSON structure, read `fields.yaml` and at most 1 sample JSON result. Do NOT read all JSON results — the Python script will handle that at runtime.
 
 Generate `generate_report.py` in the session directory.
 
@@ -762,6 +766,7 @@ Do not:
 - Generate reports before Gate 3 confirmation
 - Use TaskOutput to read research agent results (causes context exhaustion — use filesystem polling instead)
 - Launch more than 10 agents simultaneously (use automatic batching for larger sets)
+- Read all JSON results into context at any step (read 1-3 samples max; let Python scripts process the full set)
 
 Do:
 - Generate comprehensive initial frameworks from domain knowledge
