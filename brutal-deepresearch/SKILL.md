@@ -1,11 +1,11 @@
 ---
 name: brutal-deepresearch
-description: Structured deep research pipeline with confirmation gates. Generates outline, launches parallel research agents, produces validated JSON results and markdown report.
+description: Structured deep research pipeline with confirmation gates and resume support. Generates outline, launches parallel research agents, produces validated JSON results and markdown report.
 user-invocable: true
-allowed-tools: Bash(ls:*), Bash(date:*), Bash(mkdir:*), Bash(python:*), Read, Write, Edit, Glob, Grep, WebSearch, Task, AskUserQuestion
+allowed-tools: Bash(ls:*), Bash(date:*), Bash(mkdir:*), Bash(rm:*), Bash(python:*), Read, Write, Edit, Glob, Grep, WebSearch, Task, AskUserQuestion
 ---
 
-Structured deep research pipeline with 4 confirmation gates. Generates research outline from model knowledge + web search, launches parallel research agents in batches, produces validated JSON results per item, and generates a markdown report.
+Structured deep research pipeline with confirmation gates and resume support. Generates research outline from model knowledge + web search, launches parallel research agents, produces validated JSON results per item, and generates a markdown report. Supports resuming interrupted sessions.
 
 Agent assumptions (applies to all agents and subagents):
 - All tools are functional and will work without error. Do not test tools or make exploratory calls.
@@ -51,6 +51,48 @@ Generate a slug from the research topic:
 Session directory: `workspace/research/DR-<NNNN>-<slug>/`
 
 **Do not create the directory yet.** Wait until Gate 2 confirmation.
+
+---
+
+## Step 0.5: Resume Mode (Conditional)
+
+**Trigger**: User args contain the word "resume" and a path to an existing session directory.
+
+Example invocation: `/brutal-deepresearch resume research workspace/research/DR-0001-ai-coding`
+
+If resume mode is NOT detected, skip to Step 1.
+
+### 0.5.1 Read Existing Session
+
+1. Read `outline.yaml` from the given session path to get items list
+2. Read `fields.yaml` from the given session path to get field definitions
+3. Read `progress.yaml` (if it exists) for previous execution context
+
+### 0.5.2 Check Completed Results
+
+```bash
+ls <session_path>/results/*.json 2>/dev/null
+ls <session_path>/results/*.started 2>/dev/null
+```
+
+Determine item status:
+- `.json` exists → **completed** (skip this item)
+- `.started` exists but no `.json` → **interrupted** (re-research this item)
+- Neither exists → **never started** (research this item)
+
+### 0.5.3 Calculate Remaining Items
+
+Compare items in `outline.yaml` against completed results:
+- Log which items are completed and will be skipped
+- Log which items were interrupted and will be re-researched
+- Log which items never started and will be researched
+
+### 0.5.4 Branch to Execution or Report
+
+- **If remaining items exist**: Skip directly to Step 6 (Execute Deep Research), launching agents only for remaining items
+- **If all items are complete**: Report "All items already completed" and skip directly to Step 7 (Report Configuration)
+
+**Resume mode skips Steps 1-4 entirely** — the outline and fields are already confirmed from the previous session.
 
 ---
 
@@ -225,9 +267,7 @@ Present the merged outline:
 - Complete items list (original + web search additions, clearly marked)
 - Complete field framework (original + web search additions, clearly marked)
 
-Use AskUserQuestion to confirm execution config:
-- `batch_size`: Number of parallel agents per batch (suggest default: 3)
-- `items_per_agent`: Items per agent (suggest default: 1)
+Use AskUserQuestion to confirm the outline is correct.
 
 ### Add-Items/Add-Fields Loop
 
@@ -257,10 +297,7 @@ items:
     category: "<category>"
     description: "<description>"
   # ... more items
-execution:
-  batch_size: <N>
-  items_per_agent: <N>
-  output_dir: "./results"
+output_dir: "./results"
 ```
 
 Write `fields.yaml`:
@@ -278,66 +315,58 @@ categories:
 
 ---
 
-## Step 5: Deep Research - Batch Planning
+## Step 5: Deep Research - Preparation
 
 ### 5.1 Read Outline
 
-Read `workspace/research/DR-<NNNN>-<slug>/outline.yaml` to get items list and execution config.
+Read `workspace/research/DR-<NNNN>-<slug>/outline.yaml` to get items list.
 
 ### 5.2 Resume Check
 
-Check for completed results in `results/`:
+Check for completed and in-progress results in `results/`:
 
 ```bash
 ls workspace/research/DR-<NNNN>-<slug>/results/*.json 2>/dev/null
+ls workspace/research/DR-<NNNN>-<slug>/results/*.started 2>/dev/null
 ```
 
-Skip any items that already have completed JSON files.
+Determine item status:
+- `.json` exists → **completed** (skip this item)
+- `.started` exists but no `.json` → **interrupted** (re-research this item)
+- Neither exists → **never started** (research this item)
 
-### 5.3 Calculate Batches
+Log which items are being resumed vs skipped. Update `progress.yaml` (if it exists) with the current state before proceeding.
 
-Based on `batch_size` and `items_per_agent`:
-- Total remaining items
-- Number of batches needed
-- Items per batch
+### 5.3 Prepare Execution Plan
 
----
-
-## Step 6 - GATE 3: Confirm Batch Execution
-
-**This is a hard gate. Do not proceed past this step without explicit user confirmation.**
-
-Present the batch plan:
-- Total items to research: N
-- Items already completed: M (if resuming)
-- Number of batches: K
-- Agents per batch: batch_size
-- Items per agent: items_per_agent
-
-Show which items are in each batch.
-
-Ask: "Ready to start deep research? I will ask for approval before each batch."
-
-**Hard gate**: User must approve before first batch launches.
+Calculate:
+- Total remaining items (after subtracting completed and in-progress items)
+- Display which items will be researched and which are being skipped
 
 ---
 
-## Step 7: Execute Deep Research
+## Step 6: Execute Deep Research
 
-### 7.1 Batch Execution Loop
+### 6.1 Launch All Agents
 
-For each batch:
+Launch ALL remaining agents in parallel using the Task tool with `model: sonnet` and `run_in_background: true`. No batching, no inter-batch approval. Fire them all at once.
 
-1. **Launch agents in parallel** using the Task tool with `model: sonnet` and `run_in_background: true`.
+Each agent researches one item and outputs JSON for that item.
 
-2. Each agent researches `items_per_agent` items and outputs JSON per item.
-
-3. **Agent Prompt Template** (per item):
+**Agent Prompt Template** (per item):
 
 **Hard Constraint**: The following prompt must be strictly reproduced, only replacing variables in `{xxx}`. Do not modify structure or wording.
 
 ```
 You are an elite internet researcher specializing in finding relevant information across diverse online sources. Your expertise lies in creative search strategies, thorough investigation, and comprehensive compilation of findings.
+
+## Progress Tracking
+
+Before starting research, write a marker file to signal that this agent has started:
+Write an empty file to {started_path}
+
+After self-validation passes and the JSON result is confirmed correct, delete the marker file:
+rm {started_path}
 
 ## Research Methodology
 
@@ -421,6 +450,14 @@ If validation fails, fix the JSON and re-write it.
 
 **One-shot Example** (assuming researching GitHub Copilot):
 ```
+## Progress Tracking
+
+Before starting research, write a marker file to signal that this agent has started:
+Write an empty file to /home/user/workspace/research/DR-0001-ai-coding/results/GitHub_Copilot.started
+
+After self-validation passes and the JSON result is confirmed correct, delete the marker file:
+rm /home/user/workspace/research/DR-0001-ai-coding/results/GitHub_Copilot.started
+
 ## Task
 Research name: GitHub Copilot
 category: International Product
@@ -446,39 +483,60 @@ If validation fails, fix the JSON and re-write it.
 /home/user/workspace/research/DR-0001-ai-coding/results/GitHub_Copilot.json
 ```
 
-### 7.2 Parameter Construction
+### 6.2 Parameter Construction
 
 For each item being researched:
 - `{item_related_info}`: The item's complete YAML content (name + category + description)
 - `{output_path}`: Absolute path to `workspace/research/DR-<NNNN>-<slug>/results/<item_name_slug>.json`
   - Slugify: replace spaces with `_`, remove special characters
 - `{fields_path}`: Absolute path to `workspace/research/DR-<NNNN>-<slug>/fields.yaml`
+- `{started_path}`: Absolute path to `workspace/research/DR-<NNNN>-<slug>/results/<item_name_slug>.started`
 
-### 7.3 Batch Monitoring
+### 6.3 Write progress.yaml
 
-After launching a batch:
-1. Wait for all agents in the batch to complete
-2. Display batch progress: "Batch X/Y complete. Z items researched."
-3. **Inter-batch approval**: Use AskUserQuestion to ask "Batch X complete. Proceed with batch Y?" before launching the next batch.
+Immediately after launching all agents, write `progress.yaml` in the session directory:
+
+```yaml
+status: in_progress
+started: "<YYYY-MM-DD HH:MM>"
+total_items: <N>
+items:
+  - name: "<Item Name>"
+    slug: "<Item_Name>"
+    status: pending
+  # ... all items being researched
+```
+
+Items that were already completed (skipped) should not be listed — only items that agents were launched for.
+
+### 6.4 Monitor Progress
+
+After writing progress.yaml:
+1. Wait for all agents to complete
+2. Display progress as agents finish: "Agent complete: <item name>. Progress: X/Y items done."
+3. After all agents complete, update `progress.yaml`:
+   - Set each item's status to `completed` if its `.json` file exists, or `failed` if only `.started` exists or neither exists
+   - Set overall `status` to `completed` if all items done, or `partial` if some are missing
+4. Report final status: "All agents complete. X/Y items researched successfully."
 
 ---
 
-## Step 8: Report Configuration
+## Step 7: Report Configuration
 
-### 8.1 Scan Summary Fields
+### 7.1 Scan Summary Fields
 
 Read all completed JSON results and identify fields suitable for TOC display:
 - Numeric fields (stars, scores, citations)
 - Short metric fields (dates, versions, ratings)
 - Fields that appear across most/all items
 
-### 8.2 Present Options
+### 7.2 Present Options
 
 Present a dynamic options list based on actual fields found in the JSON results.
 
 ---
 
-## Step 8.5 - GATE 4: Confirm Report Config
+## Step 7.5 - GATE 3: Confirm Report Config
 
 **This is a hard gate. Do not proceed past this step without explicit user confirmation.**
 
@@ -490,9 +548,9 @@ Use AskUserQuestion to ask:
 
 ---
 
-## Step 9: Generate Report
+## Step 8: Generate Report
 
-### 9.1 Generate Report Script
+### 8.1 Generate Report Script
 
 Generate `generate_report.py` in the session directory.
 
@@ -551,7 +609,7 @@ The generated report.md must have:
   - Each category as a subsection heading
   - Each field as a labeled entry
 
-### 9.2 Execute Script
+### 8.2 Execute Script
 
 ```bash
 python workspace/research/DR-<NNNN>-<slug>/generate_report.py
@@ -559,7 +617,7 @@ python workspace/research/DR-<NNNN>-<slug>/generate_report.py
 
 ---
 
-## Step 10: Present Summary
+## Step 9: Present Summary
 
 Present completion stats:
 
@@ -570,8 +628,9 @@ Present completion stats:
 **Items Researched**: <count>
 
 ### Output Files
-- outline.yaml - Research outline and execution config
+- outline.yaml - Research outline and items list
 - fields.yaml - Field definitions
+- progress.yaml - Execution progress tracking
 - results/ - JSON results per item (<count> files)
 - generate_report.py - Report generation script
 - report.md - Final markdown report
@@ -683,8 +742,7 @@ Do not:
 - Skip confirmation gates
 - Launch research agents before user confirms the outline
 - Generate files before Gate 2 confirmation
-- Generate reports before Gate 4 confirmation
-- Proceed to the next batch without inter-batch approval
+- Generate reports before Gate 3 confirmation
 
 Do:
 - Generate comprehensive initial frameworks from domain knowledge
@@ -693,3 +751,6 @@ Do:
 - Support add-items/add-fields within Gate 2
 - Track uncertain values across all results
 - Generate reproducible report scripts
+- Track progress in progress.yaml throughout execution
+- Write .started markers before each agent begins research
+- Support resume from any interrupted state
