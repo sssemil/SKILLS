@@ -114,11 +114,11 @@ For the selected subsystem:
 
 ## Step 5: Conduct Multi-Perspective Review
 
-Launch 4 parallel subagents using the Task tool to review the subsystem from different perspectives. Each subagent should read the context file as their first action.
+Launch 5 parallel subagents using the Task tool to review the subsystem from different perspectives. Each subagent should read the context file as their first action.
 
 **CRITICAL**: Subagents do NOT inherit your context. Instruct each to read `.claude/review-state/context-<subsystem-id>.md` first.
 
-Launch all four subagents in parallel (single message with multiple Task tool calls).
+Launch all five subagents in parallel (single message with multiple Task tool calls).
 
 Each subagent should use `model: opus` and follow this template:
 
@@ -210,6 +210,28 @@ This subagent takes the perspective of a performance engineer and security audit
 - Is sensitive data properly handled?
 - Are authentication/authorization checks correct?
 - Are secrets exposed in logs?
+
+### Perspective 5: Code Reduction & Simplicity (use for `[PERSPECTIVE-SPECIFIC INSTRUCTIONS]`)
+This subagent takes the perspective of a ruthless minimalist who believes less code is better, code that doesn't exist has no bugs, and every line must justify its existence, deeply considering:
+
+**Unnecessary Code**
+- Is there dead code, unused imports, or unreachable branches?
+- Are there wrapper functions that just delegate to another function without adding value?
+- Is there speculative "just in case" code that handles scenarios that cannot occur?
+- Are there commented-out code blocks that should be deleted?
+
+**Over-Engineering**
+- Are there abstractions with only one implementation that add indirection without value?
+- Are there unnecessary indirection layers (e.g., a service that just calls another service)?
+- Are there frameworks, patterns, or design patterns applied where direct code would be simpler and clearer?
+- Are there configuration systems where hardcoded values would suffice?
+
+**Complexity Reduction**
+- Are there verbose patterns that could be replaced with idiomatic equivalents?
+- Is there excessive nesting that could be flattened with early returns or guard clauses?
+- Are there type hierarchies that add complexity without providing value?
+- Could multiple small files be merged without losing clarity?
+- Could small types or interfaces be inlined rather than defined separately?
 
 ## Step 6: Synthesize Findings
 

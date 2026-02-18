@@ -209,20 +209,77 @@ Both must pass. If they fail, fix the issues before proceeding.
 Update `state.json`:
 ```json
 {
+  "status": "reducing"
+}
+```
+
+Append to ticket history:
+```
+- <YYYY-MM-DD HH:MM> Implementation complete, starting code reduction
+```
+
+---
+
+## Phase 3: Code Reduction
+
+After implementation is complete and tests pass, but before the expensive multi-agent review, actively reduce code and complexity. Less code is better. Code that doesn't exist has no bugs. Every line must justify its existence.
+
+### 3.1 Review Your Own Diff
+
+Examine everything added or changed since `first_commit_sha`:
+
+```bash
+git diff <first_commit_sha>^..HEAD --stat
+git diff <first_commit_sha>^..HEAD
+```
+
+### 3.2 Actively Reduce
+
+For each changed file, look for and eliminate:
+
+- **Unnecessary code**: Dead code, unused imports, unreachable branches, speculative "just in case" code
+- **Over-engineering**: Abstractions with only one implementation, unnecessary indirection layers, wrapper functions that just delegate, frameworks/patterns where direct code suffices
+- **Structural bloat**: Files that were split but add no clarity (merge them back), small types that could be inlined, configuration that could be hardcoded
+
+Apply each reduction directly—delete the code, simplify the structure, inline the abstraction.
+
+### 3.3 Re-verify
+
+After reductions:
+
+```bash
+./run api:test
+./run api:build
+```
+
+Both must pass. If reductions broke something, revert that specific reduction and move on.
+
+### 3.4 Commit Reductions Separately
+
+```bash
+git add <specific-files>
+git commit -m "refactor: reduce code and complexity"
+```
+
+### 3.5 Update Status
+
+Update `state.json`:
+```json
+{
   "status": "reviewing"
 }
 ```
 
 Append to ticket history:
 ```
-- <YYYY-MM-DD HH:MM> Implementation complete, starting self-review
+- <YYYY-MM-DD HH:MM> Code reduction complete, starting self-review
 ```
 
 ---
 
-## Phase 3: Self-Review
+## Phase 4: Self-Review
 
-### 3.1 Build Context File
+### 4.1 Build Context File
 
 Create a comprehensive context file at `/tmp/task-worker-review-<task-id>.md` containing:
 
@@ -235,7 +292,7 @@ Create a comprehensive context file at `/tmp/task-worker-review-<task-id>.md` co
 
 Use the Write tool to create this file with clear section headers.
 
-### 3.2 Launch Parallel Review Subagents
+### 4.2 Launch Parallel Review Subagents
 
 Launch 4 subagents in parallel (single message with multiple Task tool calls) using `model: opus`:
 
@@ -356,7 +413,7 @@ This subagent takes the perspective of a performance engineer, optimizer, and se
 - Is input validated at trust boundaries?
 ```
 
-### 3.3 Synthesize Findings
+### 4.3 Synthesize Findings
 
 After collecting findings from all subagents:
 
@@ -366,7 +423,7 @@ After collecting findings from all subagents:
 4. **Combine related issues** into single findings
 5. **Number findings** sequentially
 
-### 3.4 Write Review File
+### 4.4 Write Review File
 
 Write findings to `workspace/tasks/in-progress/<task-id>/review-<N>.md`:
 
@@ -408,7 +465,7 @@ Write findings to `workspace/tasks/in-progress/<task-id>/review-<N>.md`:
 <NEEDS_FIXES | APPROVED>
 ```
 
-### 3.5 Update State
+### 4.5 Update State
 
 Update `state.json`:
 ```json
@@ -425,9 +482,9 @@ Append to ticket history:
 
 ---
 
-## Phase 4: Fix Loop (If Needed)
+## Phase 5: Fix Loop (If Needed)
 
-### 4.1 Check If Fixes Needed
+### 5.1 Check If Fixes Needed
 
 **If CRITICAL or MAJOR findings exist**:
 - Check iteration count against max (30)
@@ -439,9 +496,9 @@ Append to ticket history:
 - Otherwise: proceed to fix
 
 **If no CRITICAL or MAJOR findings**:
-- Skip to Phase 5 (Complete)
+- Skip to Phase 6 (Complete)
 
-### 4.2 Fix Issues
+### 5.2 Fix Issues
 
 Update `state.json`:
 ```json
@@ -464,18 +521,18 @@ For each CRITICAL/MAJOR finding:
 4. Commit the fix: `git commit -m "fix: <description>"`
 5. Update `changed_files` in state.json
 
-### 4.3 Return to Review
+### 5.3 Return to Review
 
 After fixing all issues:
 1. Run verification: `./run api:test && ./run api:build`
 2. Update state.json: `"status": "reviewing"`
-3. Return to Phase 3 (increment review_iteration)
+3. Return to Phase 4 (increment review_iteration)
 
 ---
 
-## Phase 5: Complete & Continue
+## Phase 6: Complete & Continue
 
-### 5.1 Final Verification
+### 6.1 Final Verification
 
 Run final checks:
 ```bash
@@ -483,24 +540,24 @@ Run final checks:
 ./run api:build
 ```
 
-### 5.2 Mark Checklist Items Complete
+### 6.2 Mark Checklist Items Complete
 
 Read `ticket.md` and update any remaining unchecked items `[ ]` to `[x]`.
 
-### 5.3 Move to Done
+### 6.3 Move to Done
 
 ```bash
 TASK_DIR=$(ls -1d workspace/tasks/in-progress/*/ 2>/dev/null | head -1 | xargs basename)
 mv workspace/tasks/in-progress/$TASK_DIR workspace/tasks/done/
 ```
 
-### 5.4 Append Final History
+### 6.4 Append Final History
 
 ```
 - <YYYY-MM-DD HH:MM> Task completed. Final review passed with 0 CRITICAL, 0 MAJOR findings.
 ```
 
-### 5.5 Cleanup
+### 6.5 Cleanup
 
 Delete state.json from the task directory:
 ```bash
@@ -512,7 +569,7 @@ Delete the context file:
 rm /tmp/task-worker-review-$TASK_DIR.md 2>/dev/null
 ```
 
-### 5.6 Report and Continue
+### 6.6 Report and Continue
 
 Report completion:
 ```
@@ -536,6 +593,7 @@ Continuing to next task...
 │                        STATES                                │
 ├─────────────────────────────────────────────────────────────┤
 │ implementing  → Active coding/TDD work                      │
+│ reducing      → Actively reducing code and complexity       │
 │ reviewing     → Self-review in progress                     │
 │ fixing        → Addressing review findings                  │
 │ completing    → Final verification and move to done         │
@@ -546,7 +604,8 @@ Continuing to next task...
 │                      TRANSITIONS                             │
 ├─────────────────────────────────────────────────────────────┤
 │ [new task]        → implementing                            │
-│ implementing      → reviewing (when code complete)          │
+│ implementing      → reducing (when code complete)           │
+│ reducing          → reviewing (after reductions applied)    │
 │ reviewing         → fixing (if CRITICAL/MAJOR found)        │
 │ reviewing         → completing (if no CRITICAL/MAJOR)       │
 │ fixing            → reviewing (after fixes applied)         │
@@ -576,6 +635,7 @@ When resuming from `state.json`:
 | Status | Resume Action |
 |--------|---------------|
 | `implementing` | Continue implementation from where left off |
+| `reducing` | Re-run code reduction (review diff and reduce) |
 | `reviewing` | Re-run self-review (subagents may have been interrupted) |
 | `fixing` | Check if fixes were committed, continue fixing if not |
 | `completing` | Run final verification and complete |

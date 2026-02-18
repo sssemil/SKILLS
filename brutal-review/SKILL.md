@@ -86,7 +86,7 @@ Examine every aspect of the change with extreme scrutiny, launching subagents us
 
 **CRITICAL**: Subagents do NOT inherit your context. Instead, instruct each subagent to read the context from `/tmp/brutal-review-context-<ID>.md` (using the ID you obtained in Step 2) as their first action. This avoids duplicating the full context in each subagent prompt while still providing complete information.
 
-Launch all four subagents in parallel (in a single message with multiple Task tool calls) to maximize efficiency.
+Launch all five subagents in parallel (in a single message with multiple Task tool calls) to maximize efficiency.
 
 Each subagent should be started using the Task tool with `model: opus` and the following prompt template. Replace `[PERSPECTIVE-SPECIFIC INSTRUCTIONS]` with the perspective details below:
 
@@ -176,6 +176,28 @@ This subagent takes the perspective of a performance engineer and optimizer, dee
 - Is lock ordering documented? Could deadlocks occur?
 - Should we add metrics for new operations?
 - Are there O(n²) or worse algorithms that could be O(n) or O(n log n)?
+
+### Perspective 5: Code Reduction & Simplicity (use for `[PERSPECTIVE-SPECIFIC INSTRUCTIONS]`)
+This subagent takes the perspective of a ruthless minimalist who believes less code is better, code that doesn't exist has no bugs, and every line must justify its existence, deeply considering:
+
+**Unnecessary Code**
+- Is there dead code, unused imports, or unreachable branches?
+- Are there wrapper functions that just delegate to another function without adding value?
+- Is there speculative "just in case" code that handles scenarios that cannot occur?
+- Are there commented-out code blocks that should be deleted?
+
+**Over-Engineering**
+- Are there abstractions with only one implementation that add indirection without value?
+- Are there unnecessary indirection layers (e.g., a service that just calls another service)?
+- Are there frameworks, patterns, or design patterns applied where direct code would be simpler and clearer?
+- Are there configuration systems where hardcoded values would suffice?
+
+**Complexity Reduction**
+- Are there verbose patterns that could be replaced with idiomatic equivalents?
+- Is there excessive nesting that could be flattened with early returns or guard clauses?
+- Are there type hierarchies that add complexity without providing value?
+- Could multiple small files be merged without losing clarity?
+- Could small types or interfaces be inlined rather than defined separately?
 
 ## Step 4: Collect findings
 Each subagent should deliver a brief, concise list of problems, questions, concerns ("findings") based on their analysis and the principles of their particular perspective.
