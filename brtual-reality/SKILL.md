@@ -124,6 +124,7 @@ Synthesize the analysis into a clear verdict. Use this format:
 **Interaction effects:** [Strong / Weak / None] — do customer streams cross?
 **Time to scar tissue:** [Immediate / Months / Years / Never] — how fast can you start accumulating?
 **System replacement risk:** [Low / Medium / High] — could the whole domain get disrupted?
+**$10k MRR in 6 months:** [Likely / Possible / Unlikely / Near-impossible] — [biggest risk or enabler]
 
 Then give an honest one-line verdict:
 - "This gets commoditized when building is free."
@@ -131,15 +132,73 @@ Then give an honest one-line verdict:
 - "Durable compounding moat. This is the Stripe pattern."
 - "The knowledge is real but the system might get replaced."
 
-### Step 7: The Pivot Question
+### Step 7: Revenue Reality Check
 
-If the idea scores poorly, don't just say "this is bad." Ask the pivot question:
+This is a separate axis from defensibility. A low-ratio idea that can hit $10k MRR fast is a legitimate strategy: get revenue flowing, use it to fund the search for scar tissue, and build defensibility while customers are already paying. Do not use this step to dismiss or filter out ideas — use it to add information.
+
+Run these six sub-questions against the idea:
+
+**R1: Revenue math.** Work backward from $10,000/month at three price points:
+
+- **Low ($25–50/mo):** How many customers? (200–400.) Is this a self-serve volume play? Where do they come from?
+- **Mid ($200–500/mo):** How many customers? (20–50.) Can the founder close these with light-touch sales?
+- **High ($2,000–5,000/mo):** How many customers? (2–5.) Is this enterprise? What's the sales cycle?
+
+State which price point is most realistic for this idea and why.
+
+**R2: Time to first paying customer.** How long from "product is built" to "first dollar received"? Map the steps: finding the customer, getting their attention, running a trial or demo, closing the deal, receiving payment. If time-to-first-dollar exceeds 3 months, the 6-month target is already at serious risk.
+
+**R3: Sales cycle vs. 6-month constraint.** What's the realistic sales cycle for this product at the identified price point? How many complete deal cycles fit in 6 months? Subtract onboarding time, pilot periods, and procurement delays. Does the math still work?
+
+**R4: Distribution channel.** Which channel can the founder realistically use from day one?
+
+- **Content/SEO:** Slow build (3–6 months to traction). Only viable if founder has existing audience.
+- **Outbound (cold email/LinkedIn):** Fast for high-ACV products. Requires clear ICP and compelling pain point.
+- **Community/word-of-mouth:** Requires existing audience or network. Slow to start, compounds over time.
+- **Marketplace/platform:** Instant distribution but platform dependency and margin pressure.
+- **Partnerships/integrations:** Slow to establish, fast once live. Gatekept by partner priorities.
+
+State which channel is most realistic and what that implies for the ramp.
+
+**R5: Willingness to pay.** Three key signals:
+
+- Is anyone *currently paying* for a solution to this problem (even a bad one)?
+- Is anyone *currently solving this manually* with people (spreadsheets, VAs, consultants)?
+- Is this a "must have" (blocks revenue, creates legal risk, prevents operations) or "nice to have" (saves time, improves metrics)?
+
+If nobody is paying or solving manually, willingness-to-pay risk is high. State this clearly.
+
+**R6: Revenue ramp shape.** Which pattern describes the most likely revenue trajectory?
+
+- **Linear:** One customer at a time, steady climb. Typical for consultative sales.
+- **Step-function:** A few large accounts land at discrete intervals. Typical for enterprise/mid-market.
+- **Exponential:** Product-led growth with viral or network mechanics. Rare but powerful when real.
+- **Front-loaded (services wedge):** Start with high-touch services revenue, transition to product. Fast revenue, slower margin improvement.
+
+State the shape and whether it can reach $10k MRR within the 6-month window.
+
+**Revenue verdict:**
+
+- **Likely** — clear demand, short sales cycle, realistic channel, math works at achievable price point.
+- **Possible** — demand signals exist but sales cycle is tight, or channel requires building, or price point needs validation.
+- **Unlikely** — significant unknowns in demand, distribution, or sales cycle. Multiple things must go right.
+- **Near-impossible** — long sales cycles, unproven demand, no clear distribution, or math requires unrealistic customer volume.
+
+State the single biggest risk to hitting $10k MRR in 6 months.
+
+**Revenue-first strategy note:** If the idea is low-ratio on defensibility but scores well on revenue, call this out explicitly as a viable path. Revenue buys time and funding to discover where the scar tissue lives. Many successful companies started with a commoditizable product, used early revenue to learn their domain deeply, and built defensibility from operational knowledge gained while serving paying customers. The strategic question the founder must answer: *"What operational knowledge will you accumulate while serving these customers that a competitor cannot?"* If they have a credible answer, revenue-first is not a consolation prize — it's a strategy.
+
+### Step 8: The Pivot Question
+
+Now consider both axes — defensibility and revenue speed — when evaluating the pivot.
+
+If the idea scores poorly on defensibility, don't just say "this is bad." Ask the pivot question:
 
 **"Is there a version of this idea where you *act* instead of *observe*?"**
 
 Most weak ideas have a strong cousin. An AI that *analyzes* claims is observational. An AI that *processes* them is interventional. A corporate data API is observational. A corporate filing service is interventional. A news aggregator is observational. A compliance execution platform is interventional.
 
-Identify the interventional version and explain what changes. Be specific about what "acting" means in their domain and where the scar tissue would form.
+Identify the interventional version and explain what changes. Be specific about what "acting" means in their domain and where the scar tissue would form. Also note how the pivot affects revenue speed — does the interventional version make it easier or harder to reach $10k MRR in 6 months?
 
 ## Output Format
 
@@ -163,7 +222,17 @@ When evaluating a single idea, use this structure:
 
 **Verdict:** [The honest one-liner]
 
-**The pivot:** [Interventional version of this idea, if one exists]
+**Revenue reality:**
+- Price point: [Low/Mid/High] — [amount] × [customers needed]
+- Time to first dollar: [estimate]
+- Sales cycle fit: [how many cycles in 6 months]
+- Distribution: [most realistic channel]
+- Willingness to pay: [must-have / nice-to-have / unproven]
+- Ramp shape: [linear / step-function / exponential / front-loaded]
+- **$10k MRR in 6 months:** [Likely / Possible / Unlikely / Near-impossible] — [biggest risk]
+- Revenue-first strategy: [If applicable — how revenue buys time to find scar tissue]
+
+**The pivot:** [Interventional version of this idea, if one exists. Consider both defensibility and revenue speed.]
 ```
 
 When comparing multiple ideas, use a table with columns: Project, Scar Tissue, Volatility, Interventional?, Verdict, Updated Vision. Highlight the strongest candidate and explain why.
@@ -174,7 +243,7 @@ When comparing multiple ideas, use a table with columns: Project, Scar Tissue, V
 
 2. **Be specific, not generic.** Never say "this could be commoditized." Say "the OAuth flow, billing state machine, and webhook handler are all specifiable — an AI builds this in an afternoon. What's left is the 3% of edge cases in Brazilian bank error codes, which is real scar tissue but thin."
 
-3. **Most ideas are low-ratio.** That's normal. The majority of software companies are mostly specifiable code. Don't sugarcoat this — but also note that a low-ratio business can still make money in the short term. The framework predicts long-term defensibility, not short-term revenue.
+3. **Most ideas are low-ratio. That doesn't mean they can't make money.** The majority of software companies are mostly specifiable code. Don't sugarcoat this — but defensibility and revenue speed are orthogonal axes. A low-ratio business that hits $10k MRR fast is a legitimate strategy: revenue buys time and funding to discover where the scar tissue lives. The Revenue Reality Check (Step 7) evaluates this axis explicitly. Frame revenue-first paths as viable strategy, not consolation prize. The framework predicts long-term defensibility; the revenue check predicts short-term viability. Founders need both.
 
 4. **The pivot is the gift.** The most valuable thing you can do is show someone the interventional version of their observational idea. This is where the real insight lives.
 
@@ -190,12 +259,12 @@ Reference these when you see them:
 
 | Pattern | Example | Verdict |
 |---------|---------|---------|
-| **The Stripe** | Payments, ground station brokerage, claims processing | Durable compounding. Non-adversarial system, interventional, crossing streams. |
-| **The Treadmill** | Cybersecurity, trading alpha, SEO, ad fraud | Real scar tissue but adversarial. You run to stay in place. |
-| **The Stockpile** | Medical imaging datasets, content libraries, public market data | Observational. AI synthesizes equivalents. Moat dissolves. |
-| **The Experiment** | Drug development, clinical trials, molecule screening | Path-dependent but rate-limited by experiment speed, not system volatility. Slow durable moat. |
-| **The CRM** | Generic SaaS, dashboards, developer tools, auth libraries | Mostly specifiable code. Low ratio. Commoditized when building is free. |
-| **The Blockbuster** | Scar tissue in a system being replaced | Real knowledge in a dying domain. Liability, not asset. |
+| **The Stripe** | Payments, ground station brokerage, claims processing | Durable compounding. Non-adversarial system, interventional, crossing streams. (Revenue: slow ramp — enterprise sales cycles, compliance gates, long integration timelines. $10k MRR in 6 months is unlikely without a services wedge.) |
+| **The Treadmill** | Cybersecurity, trading alpha, SEO, ad fraud | Real scar tissue but adversarial. You run to stay in place. (Revenue: variable — cybersecurity sells on fear and can close fast; trading alpha monetizes immediately but is volatile; SEO/ad fraud often self-serve with fast ramp.) |
+| **The Stockpile** | Medical imaging datasets, content libraries, public market data | Observational. AI synthesizes equivalents. Moat dissolves. (Revenue: often fast — proven demand, self-serve, but race to bottom on price as competitors replicate.) |
+| **The Experiment** | Drug development, clinical trials, molecule screening | Path-dependent but rate-limited by experiment speed, not system volatility. Slow durable moat. (Revenue: very slow — regulatory timelines, long sales cycles, high ACV but few deals. $10k MRR in 6 months is near-impossible without services revenue.) |
+| **The CRM** | Generic SaaS, dashboards, developer tools, auth libraries | Mostly specifiable code. Low ratio. Commoditized when building is free. (Revenue: often fast — proven demand, self-serve signup, low friction. But margins compress as competitors multiply.) |
+| **The Blockbuster** | Scar tissue in a system being replaced | Real knowledge in a dying domain. Liability, not asset. (Revenue: may still be extractable short-term from incumbents slow to migrate. Declining market = declining revenue ceiling.) |
 
 ## Anti-Patterns to Watch For
 
