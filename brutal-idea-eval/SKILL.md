@@ -2,7 +2,7 @@
 name: brutal-idea-eval
 description: "Comprehensive IDEA evaluation combining Reality's Moat scar tissue framework, Revenue Reality Check, VC Power-Law filter, and structured deep research pipeline. Point it at an IDEA.md for end-to-end analysis: defensibility ratio, revenue viability, VC scalability, validated research, and synthesized verdict with pivot recommendations."
 user-invocable: true
-allowed-tools: Bash(ls:*), Bash(date:*), Bash(mkdir:*), Bash(rm:*), Bash(python:*), Bash(sleep:*), Bash(wc:*), Read, Write, Edit, Glob, Grep, WebSearch, Task, AskUserQuestion
+allowed-tools: Bash(ls:*), Bash(date:*), Bash(mkdir:*), Bash(rm:*), Bash(python:*), Bash(sleep:*), Bash(wc:*), Read, Write, Edit, Glob, Grep, WebSearch, Task
 ---
 
 Comprehensive IDEA evaluation engine. Evaluates a single `IDEA.md` end-to-end using:
@@ -10,7 +10,7 @@ Comprehensive IDEA evaluation engine. Evaluates a single `IDEA.md` end-to-end us
 1. Reality's Moat scar tissue framework (defensibility)
 2. Revenue Reality Check R1-R6 (short-term viability)
 3. VC Power-Law + Control Filter (scalability ceiling)
-4. Structured Deep Research pipeline (claim validation with confirmation gates, resume support, JSON output)
+4. Structured Deep Research pipeline (claim validation, resume support, JSON output)
 
 Produces a validated brutal reality analysis, an optimistic opportunity lens, a structured deep research report, a final synthesized verdict, and a pivot recommendation.
 
@@ -468,7 +468,7 @@ Then update `state.yaml`: set `phase_5_verdict: completed`.
 
 # PHASE 6 — Structured Deep Research Pipeline
 
-This phase validates claims from IDEA.md using the deep research engine. It follows the brutal-deepresearch process with confirmation gates and resume support.
+This phase validates claims from IDEA.md using the deep research engine. It runs fully autonomously with resume support.
 
 ---
 
@@ -516,22 +516,7 @@ Per category, define research fields:
 - `moat_indicators`, `compression_estimate`
 - `uncertainty_flags`
 
-Present the framework to the user.
-
----
-
-## GATE 1 — Confirm Research Framework
-
-**Hard gate. Do not proceed without explicit user confirmation.**
-
-Present:
-- Items list with names, categories, and descriptions
-- Field framework organized by category
-
-Use AskUserQuestion:
-- "Are these research items and fields correct? Add/remove anything?"
-
-Repeat until user confirms.
+Proceed directly to web search supplement. Do not ask the user for confirmation.
 
 ---
 
@@ -543,7 +528,7 @@ Launch 1 web-search-agent (background) using the Task tool with `model: sonnet` 
 - `{topic}`: The idea name/domain from IDEA.md
 - `{YYYY-MM-DD}`: Current date from Step 0.2
 - `{step1_output}`: Complete output from Step 6.1 (items list + field framework)
-- `{time_range}`: Default to "Since 2024" unless user specifies otherwise
+- `{time_range}`: "Since 2024"
 
 **Hard Constraint**: The following prompt must be strictly reproduced, only replacing variables in `{xxx}`. Do not modify structure or wording.
 
@@ -614,28 +599,9 @@ After the web search agent completes, merge findings with the initial framework:
 
 ---
 
-## GATE 2 — Confirm Final Research Outline
-
-**Hard gate. Do not proceed without explicit user confirmation.**
-
-Present the merged outline:
-- Complete items list (original + web search additions, clearly marked)
-- Complete field framework (original + web search additions, clearly marked)
-
-Use AskUserQuestion to confirm.
-
-### Add-Items/Add-Fields Loop
-
-User can say "add X item" or "add Y field." If they do:
-1. Add the requested item/field
-2. Re-present the updated framework
-3. Ask for confirmation again
-
-Repeat until user explicitly confirms.
-
 ### 6.2.2 Write Session Files
 
-After confirmation, write:
+After merging, immediately write:
 
 `outline.yaml`:
 ```yaml
@@ -841,19 +807,12 @@ Read all completed JSON results and identify fields suitable for TOC display:
 - Short metric fields
 - Fields appearing across most items
 
-### 6.5.2 Present Options
+### 6.5.2 Select Summary Fields
 
-Present dynamic options list based on actual fields found.
-
----
-
-## GATE 3 — Confirm Report Config
-
-**Hard gate. Do not proceed without explicit user confirmation.**
-
-Use AskUserQuestion:
-- Which summary fields to display in the TOC alongside item names?
-- Present available fields as options
+Auto-select the most informative summary fields for the TOC:
+- Prefer numeric fields, short metric fields, and fields appearing across most items
+- Select 2-4 fields maximum
+- Do not ask the user — choose automatically based on data coverage and informativeness
 
 ---
 
@@ -1115,7 +1074,7 @@ Any of these trigger resume mode:
 1. **Explicit**: User args contain "resume" and a session path.
    Example: `/brutal-idea-eval resume workspace/idea-eval/IE-0001-ai-invoicing`
 
-2. **Auto-detect**: User invokes the skill and a session directory already exists for the same IDEA.md. Check `workspace/idea-eval/` for directories whose `state.yaml` → `idea_source` matches the current IDEA.md path. If found, ask user: "Existing session found at IE-XXXX. Resume or start fresh?"
+2. **Auto-detect**: User invokes the skill and a session directory already exists for the same IDEA.md. Check `workspace/idea-eval/` for directories whose `state.yaml` → `idea_source` matches the current IDEA.md path. If found and not completed, automatically resume from last incomplete phase. If completed, start a new session with the next number.
 
 ## Resume Logic
 
@@ -1135,7 +1094,7 @@ Scan phases in order. Find the first phase that is NOT `completed`:
 | `phase_4_revenue: pending` or `in_progress` | Read IDEA.md + `phase-2-moat.md` + `phase-3-vc.md`. Run Phase 4. |
 | `phase_5_verdict: pending` or `in_progress` | Read IDEA.md + phases 2-4 files. Run Phase 5. |
 | `phase_6_research: pending` | Read IDEA.md + `phase-5-verdict.md`. Run Phase 6 from start. |
-| `phase_6_research: in_progress` | Read `outline.yaml` + `fields.yaml`. Check `results/` for completed items. Resume research for remaining items only. Skip gates 1 and 2. |
+| `phase_6_research: in_progress` | Read `outline.yaml` + `fields.yaml`. Check `results/` for completed items. Resume research for remaining items only. |
 | `phase_6_research: completed`, `phase_6_report: pending` or `in_progress` | Read `outline.yaml` + `fields.yaml`. Run report generation (Step 6.5+). |
 | `phase_6_report: completed`, `phase_7_synthesis: pending` or `in_progress` | Read all phase files + `report.md`. Run Phase 7. |
 | `phase_7_synthesis: completed` | Report "Session already complete." Present completion summary. |
@@ -1186,9 +1145,7 @@ Be direct. Be thorough. Be systematic. Be constructive.
 
 Do not:
 - Accept vague ideas without clarification
-- Skip confirmation gates
-- Launch research before user confirms outline
-- Generate files before gate confirmation
+- Ask the user questions or wait for confirmation — run fully autonomously
 - Use TaskOutput to read research agent results (causes context exhaustion)
 - Launch more than 10 agents simultaneously
 - Dismiss low-ratio ideas — evaluate their revenue path instead
