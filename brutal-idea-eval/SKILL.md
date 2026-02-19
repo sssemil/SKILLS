@@ -26,23 +26,72 @@ Agent assumptions (applies to all agents and subagents):
 
 When pointed at an `IDEA.md`, execute these phases in order:
 
-1. **Phase 1**: Load and parse IDEA.md
-2. **Phase 2**: Reality's Moat analysis (Steps 1-5)
-3. **Phase 3**: VC Power-Law + Control Filter
-4. **Phase 4**: Revenue Reality Check (R1-R6)
-5. **Phase 5**: Synthesize initial verdict
-6. **Phase 6**: Structured Deep Research (claim validation)
-7. **Phase 7**: Final synthesis and pivot recommendation
+1. **Phase 1**: Load and parse IDEA.md, create session directory
+2. **Phase 2**: Reality's Moat analysis (Steps 1-5) → writes `phase-2-moat.md`
+3. **Phase 3**: VC Power-Law + Control Filter → writes `phase-3-vc.md`
+4. **Phase 4**: Revenue Reality Check (R1-R6) → writes `phase-4-revenue.md`
+5. **Phase 5**: Synthesize initial verdict → writes `phase-5-verdict.md`
+6. **Phase 6**: Structured Deep Research (claim validation) → writes `outline.yaml`, `fields.yaml`, `results/*.json`, `report.md`
+7. **Phase 7**: Final synthesis and pivot recommendation → writes `verdict.md`
 
 Each phase builds on the previous. Do not skip phases.
 
+**Every phase writes its output to a file in the session directory and updates `state.yaml` before moving to the next phase.** This enables resume from zero context at any point.
+
+### Session Directory Structure
+
+```
+workspace/idea-eval/IE-<NNNN>-<slug>/
+├── state.yaml              # Phase completion tracking (source of truth for resume)
+├── phase-2-moat.md         # Phase 2 output
+├── phase-3-vc.md           # Phase 3 output
+├── phase-4-revenue.md      # Phase 4 output
+├── phase-5-verdict.md      # Phase 5 output (includes claims catalog)
+├── outline.yaml            # Phase 6 research outline
+├── fields.yaml             # Phase 6 field definitions
+├── progress.yaml           # Phase 6 research progress
+├── results/                # Phase 6 research results (one JSON per item)
+├── generate_report.py      # Phase 6 report script
+├── report.md               # Phase 6 deep research report
+└── verdict.md              # Phase 7 final synthesis
+```
+
+### state.yaml Format
+
+```yaml
+session: "IE-<NNNN>-<slug>"
+idea_source: "<absolute path to IDEA.md>"
+created: "<YYYY-MM-DD>"
+phases:
+  phase_1_context: completed
+  phase_2_moat: completed
+  phase_3_vc: in_progress
+  phase_4_revenue: pending
+  phase_5_verdict: pending
+  phase_6_research: pending
+  phase_6_report: pending
+  phase_7_synthesis: pending
+```
+
+**Rules:**
+- Update `state.yaml` AFTER writing the phase output file, not before.
+- A phase is `completed` only when its output file exists AND `state.yaml` says so.
+- `in_progress` means the phase was started but not finished (crash recovery target).
+- `pending` means not yet started.
+
 ---
 
-# PHASE 1 — Load Context
+# PHASE 1 — Load Context & Create Session
 
-## Step 0: Load IDEA.md & Session Setup
+## Step 0: Resume Check (BEFORE anything else)
 
-### 0.1 Load IDEA.md
+Before starting a new session, check if the user provided a path to an existing session directory or if one can be auto-detected.
+
+**Auto-detection**: Check for existing `workspace/idea-eval/` directories. If the user provides a session path or says "resume," read `state.yaml` from that directory and skip to the Resume Logic section at the bottom of this document.
+
+If no resume is detected, proceed with a fresh session.
+
+## Step 0.1: Load IDEA.md
 
 Read `IDEA.md` from the project root or path provided by user.
 
@@ -59,13 +108,13 @@ Extract and catalog:
 
 If IDEA.md is missing or empty, stop and ask the user to provide one.
 
-### 0.2 Get Current Date
+## Step 0.2: Get Current Date
 
 ```bash
 date +%Y-%m-%d
 ```
 
-### 0.3 Determine Session Number
+## Step 0.3: Determine Session Number
 
 Find the highest existing session number:
 
@@ -75,7 +124,7 @@ ls workspace/idea-eval/ 2>/dev/null | grep -oE '[0-9]{4}' | sort -rn | head -1
 
 New session number = highest + 1. If none exist, start at `0001`.
 
-### 0.4 Generate Session Slug
+## Step 0.4: Generate Session Slug
 
 Generate from the idea name:
 - Lowercase
@@ -85,7 +134,32 @@ Generate from the idea name:
 
 Session directory: `workspace/idea-eval/IE-<NNNN>-<slug>/`
 
-**Do not create the directory yet.** Wait until after Phase 5 verdict (before deep research begins).
+## Step 0.5: Create Session Directory & Initialize State
+
+Create the directory immediately:
+
+```bash
+mkdir -p workspace/idea-eval/IE-<NNNN>-<slug>/results
+```
+
+Write initial `state.yaml`:
+
+```yaml
+session: "IE-<NNNN>-<slug>"
+idea_source: "<absolute path to IDEA.md>"
+created: "<YYYY-MM-DD>"
+phases:
+  phase_1_context: completed
+  phase_2_moat: pending
+  phase_3_vc: pending
+  phase_4_revenue: pending
+  phase_5_verdict: pending
+  phase_6_research: pending
+  phase_6_report: pending
+  phase_7_synthesis: pending
+```
+
+Phase 1 is marked `completed` because IDEA.md has been read and the session is initialized.
 
 ---
 
@@ -202,6 +276,12 @@ Ask: Is the world still changing *within* this system, or is it about to be *rep
 
 If there is a plausible system replacement on the horizon, flag it. Scar tissue in a dying system is a liability, not an asset.
 
+## Phase 2 Checkpoint: Write Output & Update State
+
+Write the complete Phase 2 analysis to `phase-2-moat.md` in the session directory. Include all five steps: ratio, survival questions, interaction effects, competitive compression, and system replacement risk.
+
+Then update `state.yaml`: set `phase_2_moat: completed`.
+
 ---
 
 # PHASE 3 — VC Power-Law & Control Filter
@@ -243,6 +323,12 @@ Evaluate:
 - Content/SEO compounding (does organic grow over time?)
 
 Distribution leverage often matters more than scar tissue. A strong moat with no distribution compounds slowly. Weak moat with strong distribution can reach revenue fast.
+
+## Phase 3 Checkpoint: Write Output & Update State
+
+Write the complete Phase 3 analysis to `phase-3-vc.md` in the session directory. Include all three tests: ceiling, inevitable touchpoint, and distribution asymmetry.
+
+Then update `state.yaml`: set `phase_3_vc: completed`.
 
 ---
 
@@ -318,6 +404,12 @@ State the single biggest risk to hitting $10k MRR in 6 months.
 
 If the idea is low-ratio on defensibility but scores well on revenue, call this out explicitly as a viable path. Revenue buys time and funding to discover where the scar tissue lives. The strategic question the founder must answer: *"What operational knowledge will you accumulate while serving these customers that a competitor cannot?"* If they have a credible answer, revenue-first is not a consolation prize — it is a strategy.
 
+## Phase 4 Checkpoint: Write Output & Update State
+
+Write the complete Phase 4 analysis to `phase-4-revenue.md` in the session directory. Include all six sub-questions (R1-R6), the revenue verdict, and the revenue-first strategy note if applicable.
+
+Then update `state.yaml`: set `phase_4_revenue: completed`.
+
 ---
 
 # PHASE 5 — Initial Verdict Synthesis
@@ -363,6 +455,15 @@ List every factual claim from IDEA.md that the deep research phase should verify
 
 These become research items for Phase 6.
 
+## Phase 5 Checkpoint: Write Output & Update State
+
+Write the complete Phase 5 analysis to `phase-5-verdict.md` in the session directory. Include:
+- The full verdict dashboard
+- The initial one-line verdict
+- The complete claims-to-validate list (this is critical — Phase 6 reads it)
+
+Then update `state.yaml`: set `phase_5_verdict: completed`.
+
 ---
 
 # PHASE 6 — Structured Deep Research Pipeline
@@ -371,19 +472,21 @@ This phase validates claims from IDEA.md using the deep research engine. It foll
 
 ---
 
-## Step 6.0: Session Setup
+## Step 6.0: Load Prior Phase Context
 
-Create the session directory (deferred from Step 0.4):
+On resume, re-read prior phase outputs to reconstruct context:
+1. Read `IDEA.md` from path stored in `state.yaml` → `idea_source`
+2. Read `phase-5-verdict.md` → get claims-to-validate list
 
-```bash
-mkdir -p workspace/idea-eval/IE-<NNNN>-<slug>/results
-```
+The session directory already exists (created in Phase 1).
+
+Update `state.yaml`: set `phase_6_research: in_progress`.
 
 ---
 
 ## Step 6.1: Generate Research Framework
 
-Using the claims catalog from Phase 5, generate:
+Using the claims catalog from Phase 5 (or `phase-5-verdict.md` on resume), generate:
 
 ### Items List
 
@@ -794,13 +897,29 @@ Skip if:
 python workspace/idea-eval/IE-<NNNN>-<slug>/generate_report.py
 ```
 
+## Phase 6 Checkpoint: Update State
+
+After research agents complete: update `state.yaml`: set `phase_6_research: completed`.
+
+After report is generated: update `state.yaml`: set `phase_6_report: completed`.
+
 ---
 
 # PHASE 7 — Final Synthesis
 
-After deep research completes, synthesize everything into the final output.
+Update `state.yaml`: set `phase_7_synthesis: in_progress`.
 
-Read all research results from `workspace/idea-eval/IE-<NNNN>-<slug>/results/`. Compare validated findings against IDEA.md claims. Note where claims were confirmed, corrected, or invalidated.
+### Load Context for Synthesis
+
+On resume (zero context), re-read all prior outputs:
+1. `IDEA.md` from `idea_source` in `state.yaml`
+2. `phase-2-moat.md` — defensibility analysis
+3. `phase-3-vc.md` — VC filter results
+4. `phase-4-revenue.md` — revenue reality check
+5. `phase-5-verdict.md` — initial verdict and claims list
+6. `report.md` — deep research report (summary, not raw JSON)
+
+Then read research results from `workspace/idea-eval/IE-<NNNN>-<slug>/results/`. Compare validated findings against IDEA.md claims. Note where claims were confirmed, corrected, or invalidated.
 
 ## Final Output Format
 
@@ -897,6 +1016,8 @@ If the idea has a low ceiling, show the version that unlocks a larger TAM.
 
 Write the final synthesis to `workspace/idea-eval/IE-<NNNN>-<slug>/verdict.md`.
 
+Update `state.yaml`: set `phase_7_synthesis: completed`.
+
 ---
 
 ## Completion Summary
@@ -909,9 +1030,14 @@ Present:
 **Session**: workspace/idea-eval/IE-<NNNN>-<slug>/
 
 ### Output Files
+- state.yaml — Phase completion tracking (resume source of truth)
+- phase-2-moat.md — Defensibility analysis
+- phase-3-vc.md — VC Power-Law filter
+- phase-4-revenue.md — Revenue Reality Check
+- phase-5-verdict.md — Initial verdict + claims catalog
 - outline.yaml — Research outline and items list
 - fields.yaml — Field definitions
-- progress.yaml — Execution progress tracking
+- progress.yaml — Research execution progress
 - results/ — JSON results per item (<count> files)
 - generate_report.py — Report generation script
 - report.md — Deep research report
@@ -980,24 +1106,73 @@ Reference these when you see them:
 
 # Resume Support
 
-This skill supports resuming interrupted sessions.
+This skill supports resuming from zero context at any point. All state is on disk.
 
-**Trigger**: User args contain "resume" and a path to an existing session directory.
+## Resume Triggers
 
-Example: `/brutal-idea-eval resume workspace/idea-eval/IE-0001-ai-invoicing`
+Any of these trigger resume mode:
 
-### Resume Logic
+1. **Explicit**: User args contain "resume" and a session path.
+   Example: `/brutal-idea-eval resume workspace/idea-eval/IE-0001-ai-invoicing`
 
-1. Read `outline.yaml`, `fields.yaml`, `progress.yaml` from the session path
-2. Check completed results in `results/`
-3. Determine which phase to resume from:
-   - If no results exist: resume from Phase 6 (research execution)
-   - If some results exist: resume research for remaining items
-   - If all results complete but no `report.md`: resume from Step 6.5 (report generation)
-   - If `report.md` exists but no `verdict.md`: resume from Phase 7 (final synthesis)
-   - If `verdict.md` exists: report "Session already complete"
+2. **Auto-detect**: User invokes the skill and a session directory already exists for the same IDEA.md. Check `workspace/idea-eval/` for directories whose `state.yaml` → `idea_source` matches the current IDEA.md path. If found, ask user: "Existing session found at IE-XXXX. Resume or start fresh?"
 
-Resume skips all completed phases and gates.
+## Resume Logic
+
+### Step R1: Read state.yaml
+
+Read `state.yaml` from the session directory. This is the single source of truth.
+
+### Step R2: Determine Resume Point
+
+Scan phases in order. Find the first phase that is NOT `completed`:
+
+| state.yaml value | Resume action |
+|---|---|
+| `phase_1_context: pending` | Should not happen (state.yaml would not exist). Start fresh. |
+| `phase_2_moat: pending` or `in_progress` | Read IDEA.md from `idea_source`. Run Phase 2 from start. |
+| `phase_3_vc: pending` or `in_progress` | Read IDEA.md + `phase-2-moat.md`. Run Phase 3 from start. |
+| `phase_4_revenue: pending` or `in_progress` | Read IDEA.md + `phase-2-moat.md` + `phase-3-vc.md`. Run Phase 4. |
+| `phase_5_verdict: pending` or `in_progress` | Read IDEA.md + phases 2-4 files. Run Phase 5. |
+| `phase_6_research: pending` | Read IDEA.md + `phase-5-verdict.md`. Run Phase 6 from start. |
+| `phase_6_research: in_progress` | Read `outline.yaml` + `fields.yaml`. Check `results/` for completed items. Resume research for remaining items only. Skip gates 1 and 2. |
+| `phase_6_research: completed`, `phase_6_report: pending` or `in_progress` | Read `outline.yaml` + `fields.yaml`. Run report generation (Step 6.5+). |
+| `phase_6_report: completed`, `phase_7_synthesis: pending` or `in_progress` | Read all phase files + `report.md`. Run Phase 7. |
+| `phase_7_synthesis: completed` | Report "Session already complete." Present completion summary. |
+
+### Step R3: Load Context Files
+
+For the resume point identified, read ONLY the files needed:
+
+- **Always read**: `state.yaml`
+- **Always read**: IDEA.md (from `idea_source` path)
+- **For Phase 3+**: read `phase-2-moat.md`
+- **For Phase 4+**: read `phase-3-vc.md`
+- **For Phase 5+**: read `phase-4-revenue.md`
+- **For Phase 6+**: read `phase-5-verdict.md`
+- **For Phase 6 research resume**: read `outline.yaml`, `fields.yaml`, check `results/*.json` and `results/*.started`
+- **For Phase 7**: read `report.md` (do NOT read raw result JSONs into context — use `report.md` summary)
+
+### Step R4: Continue Execution
+
+Jump to the identified phase and execute from there. All subsequent phases run normally, including their checkpoints and state updates.
+
+## Filesystem-Based State Recovery
+
+If `state.yaml` is missing or corrupted, reconstruct state from filesystem:
+
+```
+phase_1_context:  completed if state.yaml exists (circular, but directory existence implies Phase 1 ran)
+phase_2_moat:     completed if phase-2-moat.md exists
+phase_3_vc:       completed if phase-3-vc.md exists
+phase_4_revenue:  completed if phase-4-revenue.md exists
+phase_5_verdict:  completed if phase-5-verdict.md exists
+phase_6_research: completed if outline.yaml exists AND all items in outline.yaml have matching .json in results/
+phase_6_report:   completed if report.md exists
+phase_7_synthesis: completed if verdict.md exists
+```
+
+Write a reconstructed `state.yaml` before proceeding.
 
 ---
 
@@ -1022,9 +1197,12 @@ Do not:
 Do:
 - Read IDEA.md fully before any analysis
 - Run all framework steps in order
+- Write phase output files after each phase completes
+- Update state.yaml after every phase transition
 - Present clear verdicts at each phase
 - Validate claims with structured research
-- Support resume from any interrupted state
+- Support resume from zero context at any interruption point via state.yaml + phase files
+- Reconstruct state from filesystem if state.yaml is missing
 - Frame revenue-first as a legitimate strategy when warranted
 - Be specific about what is specifiable and what is scar tissue
 - Always suggest a pivot when the idea has weaknesses
