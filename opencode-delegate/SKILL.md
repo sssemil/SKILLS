@@ -1,13 +1,13 @@
 ---
 name: opencode-delegate
-description: Delegate coding work to OpenCode through safe-opencode. Use when Codex should plan, call sandboxed OpenCode for implementation, review git diff, and validate instead of writing the main code itself.
+description: Delegate coding work to OpenCode through safe-opencode. Use when Codex should plan, route the job to a suitable DeepSeek model, review git diff, and validate instead of writing the main code itself.
 ---
 
 # Safe OpenCode Delegate
 
 Use this skill when the user wants Codex to orchestrate coding work while OpenCode performs the implementation inside the safe-claude sandbox.
 
-Codex is the planner, reviewer, and validator.
+Codex is the planner, operator, reviewer, and validator.
 
 OpenCode is the implementer.
 
@@ -25,6 +25,8 @@ Do not write the main implementation yourself.
 
 Use `safe-opencode` for:
 
+- finding relevant code
+- tracing behavior
 - implementation
 - refactors
 - migrations
@@ -38,20 +40,59 @@ Codex remains responsible for:
 
 - understanding the request
 - choosing scope
+- choosing the model
 - writing the OpenCode job
 - reviewing the diff
 - running validation
 - deciding whether the patch is acceptable
 
-## Command
+## Model routing
 
-Primary command:
+Use the smallest useful DeepSeek model.
+
+### Fast path
+
+Use DeepSeek v4 Fast for simple, bounded, low-risk jobs:
+
+- find where something is implemented
+- inspect a small area of the repo
+- explain a local behavior
+- make a one-file or very small edit
+- add a small test
+- fix an obvious typo, import, or error handling issue
+- triage a test failure
+- produce boilerplate inside an existing pattern
+- do a narrow rename or cleanup
+
+Fast command:
+
+```bash
+safe-opencode run --model deepseek/deepseek-v4-fast --title "codex-delegate: <short-task-name>" "<single focused job>"
+```
+
+### Pro path
+
+Use DeepSeek v4 Pro for heavier work:
+
+- multi-file changes
+- architecture-sensitive changes
+- unclear bugs
+- migrations
+- public API changes
+- security-sensitive logic
+- database or persistence changes
+- complicated test failures
+- work where a bad patch would be costly to unwind
+
+Pro command:
 
 ```bash
 safe-opencode run --model deepseek/deepseek-v4-pro --title "codex-delegate: <short-task-name>" "<single focused job>"
 ```
 
-If the DeepSeek model ID is wrong, discover the installed model name:
+If a Fast job returns a weak, broad, or confused patch, do not keep pushing it. Escalate once to Pro with a sharper prompt.
+
+If either model ID is wrong, discover the installed DeepSeek model names:
 
 ```bash
 safe-opencode models deepseek
@@ -89,11 +130,21 @@ Then inspect enough of the repo to know:
 
 Do not delegate blind.
 
-### 2. Send one focused job
+### 2. Send one focused OpenCode job
 
 The OpenCode prompt must be narrow and operational.
 
-Use this shape:
+Include:
+
+- the goal
+- files or directories to inspect
+- constraints
+- expected tests
+- what not to touch
+- instruction to keep the diff minimal
+- instruction to stop after the requested patch
+
+Use this prompt shape:
 
 ```text
 You are implementing one focused change in this repository.
@@ -124,7 +175,13 @@ Do not:
 Stop after the patch.
 ```
 
-Run:
+For simple jobs, run the Fast command:
+
+```bash
+safe-opencode run --model deepseek/deepseek-v4-fast --title "codex-delegate: <short-task-name>" "<prompt>"
+```
+
+For heavier jobs, run the Pro command:
 
 ```bash
 safe-opencode run --model deepseek/deepseek-v4-pro --title "codex-delegate: <short-task-name>" "<prompt>"
@@ -154,6 +211,8 @@ Reject or repair patches with:
 - accidental lockfile changes
 - changes to user work that existed before this task
 
+If the diff is too broad, do not fix it manually first. Send a narrower corrective OpenCode job.
+
 ### 4. Validate
 
 Run the smallest useful validation command.
@@ -176,10 +235,14 @@ Only say validation passed when the command actually passed.
 
 ### 5. Repair loop
 
-If validation fails because of the OpenCode patch, send one narrow follow-up:
+If validation fails because of the OpenCode patch, send one narrow follow-up.
 
-```bash
-safe-opencode run --model deepseek/deepseek-v4-pro --title "codex-delegate: fix <short-task-name>" "Fix only this validation failure from the previous patch:
+Use Fast for obvious, local failures. Use Pro for failures that require reasoning across several files.
+
+Repair prompt:
+
+```text
+Fix only this validation failure from the previous patch:
 
 <error output>
 
@@ -188,7 +251,7 @@ Constraints:
 - Make the smallest change.
 - Do not rewrite unrelated code.
 - Do not add dependencies.
-- Stop after the fix."
+- Stop after the fix.
 ```
 
 Then rerun:
@@ -217,6 +280,7 @@ Do not take over the main implementation unless `safe-opencode` fails.
 
 End with:
 
+- which model was used
 - what OpenCode changed
 - what Codex changed, if anything
 - files touched
@@ -227,6 +291,8 @@ End with:
 ## Hard rules
 
 - Always use `safe-opencode`, not `opencode`.
+- Prefer DeepSeek v4 Fast for simple bounded jobs.
+- Use DeepSeek v4 Pro for multi-file, risky, or ambiguous work.
 - Never accept OpenCode output without reading `git diff`.
 - Never claim tests passed unless they passed.
 - Never hide `safe-opencode` failures.
