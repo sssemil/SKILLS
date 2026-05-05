@@ -52,7 +52,7 @@ Use the smallest useful DeepSeek model.
 
 ### Fast path
 
-Use DeepSeek v4 Fast for simple, bounded, low-risk jobs:
+Use DeepSeek v4 Flash for simple, bounded, low-risk jobs:
 
 - find where something is implemented
 - inspect a small area of the repo
@@ -67,7 +67,7 @@ Use DeepSeek v4 Fast for simple, bounded, low-risk jobs:
 Fast command:
 
 ```bash
-safe-opencode run --model deepseek/deepseek-v4-fast --title "codex-delegate: <short-task-name>" "<single focused job>"
+safe-opencode run --model deepseek/deepseek-v4-flash --title "codex-delegate: <short-task-name>" "<single focused job>"
 ```
 
 ### Pro path
@@ -178,7 +178,7 @@ Stop after the patch.
 For simple jobs, run the Fast command:
 
 ```bash
-safe-opencode run --model deepseek/deepseek-v4-fast --title "codex-delegate: <short-task-name>" "<prompt>"
+safe-opencode run --model deepseek/deepseek-v4-flash --title "codex-delegate: <short-task-name>" "<prompt>"
 ```
 
 For heavier jobs, run the Pro command:
@@ -291,7 +291,7 @@ End with:
 ## Hard rules
 
 - Always use `safe-opencode`, not `opencode`.
-- Prefer DeepSeek v4 Fast for simple bounded jobs.
+- Prefer DeepSeek v4 Flash for simple bounded jobs.
 - Use DeepSeek v4 Pro for multi-file, risky, or ambiguous work.
 - Never accept OpenCode output without reading `git diff`.
 - Never claim tests passed unless they passed.
