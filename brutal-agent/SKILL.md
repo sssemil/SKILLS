@@ -37,7 +37,7 @@ Run a strict orchestration loop that combines these two skills without dropping 
 
 ### Step 1.5: Initialize Pass Tracking
 - Define a "pass" as reviewing all currently discovered subsystems to `done` once.
-- Read `.claude/review-state/manifest.json` and record:
+- Read `workspace/review-state/manifest.json` and record:
   - `pass_started_at`
   - `pass_baseline_tasks_created = len(tasks_created)` (use `0` if manifest does not yet exist)
 - Use this baseline to determine whether the pass discovered any new CRITICAL/MAJOR issues.

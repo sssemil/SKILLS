@@ -26,7 +26,7 @@ Before any planning decisions in this workflow (including review scoping and tas
 First, check if a review is already in progress:
 
 ```bash
-ls -la .claude/review-state/manifest.json 2>/dev/null
+ls -la workspace/review-state/manifest.json 2>/dev/null
 ```
 
 **If manifest.json exists**: Read it and inspect subsystem statuses.
@@ -40,7 +40,7 @@ Create the state directory structure and discover subsystems.
 
 ### 2.1 Create Directory Structure
 ```bash
-mkdir -p .claude/review-state/subsystems
+mkdir -p workspace/review-state/subsystems
 ```
 
 ### 2.2 Discover Subsystems Dynamically
@@ -68,7 +68,7 @@ Do not hardcode subsystem names or paths. Discover them from the repository on e
 
 ### 2.3 Create Manifest
 
-Write the manifest file at `.claude/review-state/manifest.json` using the discovered subsystem list:
+Write the manifest file at `workspace/review-state/manifest.json` using the discovered subsystem list:
 
 ```json
 {
@@ -110,13 +110,13 @@ For the selected subsystem:
    - List of all files with their full content
    - Any relevant patterns from CLAUDE.md that apply to this subsystem
 
-3. **Write the CONTEXT BLOCK** to `.claude/review-state/context-<subsystem-id>.md`
+3. **Write the CONTEXT BLOCK** to `workspace/review-state/context-<subsystem-id>.md`
 
 ## Step 5: Conduct Multi-Perspective Review
 
 Launch 5 parallel subagents using the Task tool to review the subsystem from different perspectives. Each subagent should read the context file as their first action.
 
-**CRITICAL**: Subagents do NOT inherit your context. Instruct each to read `.claude/review-state/context-<subsystem-id>.md` first.
+**CRITICAL**: Subagents do NOT inherit your context. Instruct each to read `workspace/review-state/context-<subsystem-id>.md` first.
 
 Launch all five subagents in parallel (single message with multiple Task tool calls).
 
@@ -133,7 +133,7 @@ You are reviewing subsystem "<SUBSYSTEM_NAME>".
 [PERSPECTIVE-SPECIFIC INSTRUCTIONS - see below]
 
 ## Context
-**FIRST ACTION**: Use the Read tool to read `.claude/review-state/context-<SUBSYSTEM_ID>.md`. This contains all source files in this subsystem.
+**FIRST ACTION**: Use the Read tool to read `workspace/review-state/context-<SUBSYSTEM_ID>.md`. This contains all source files in this subsystem.
 
 ## Your Task
 Review all code from your specific perspective. For each finding:
@@ -260,7 +260,7 @@ Before writing the subsystem report:
 
 ## Step 7: Write Subsystem Report
 
-Write findings to `.claude/review-state/subsystems/<subsystem-name>.md`:
+Write findings to `workspace/review-state/subsystems/<subsystem-name>.md`:
 
 ```markdown
 # Review: <Subsystem Name>
@@ -363,7 +363,7 @@ Before committing, validate all created task tickets locally:
 Commit the new tasks and manifest changes:
 
 ```bash
-git add workspace/tasks/todo/*/ticket.md .claude/review-state/manifest.json
+git add workspace/tasks/todo/*/ticket.md workspace/review-state/manifest.json
 git commit -m "chore: add review tasks from subsystem <subsystem-id> (<subsystem-name>) review"
 ```
 
@@ -397,7 +397,7 @@ Run `/brutal-project-review` again to continue with the next subsystem.
 
 Delete the temporary context file to save space:
 ```bash
-rm .claude/review-state/context-<subsystem-id>.md
+rm workspace/review-state/context-<subsystem-id>.md
 ```
 
 ---
