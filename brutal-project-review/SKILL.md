@@ -30,8 +30,8 @@ ls -la workspace/review-state/manifest.json 2>/dev/null
 ```
 
 **If manifest.json exists**: Read it and inspect subsystem statuses.
-- If any subsystem is `pending` or `in_progress`, resume from the next pending subsystem.
-- If all subsystems are `done`, restart the review by reinitializing a fresh manifest (proceed to Step 2).
+- If any subsystem is `pending` or `in_progress`, keep the manifest and proceed to Step 3.
+- If all subsystems are `done`, keep the manifest and proceed to Step 3 so the user can choose whether to re-review one subsystem or all subsystems.
 **If manifest.json does not exist**: Initialize a fresh review (proceed to Step 2).
 
 ## Step 2: Initialize Fresh Review (Skip if Resuming)
@@ -87,15 +87,46 @@ Get the current timestamp:
 date -u +"%Y-%m-%dT%H:%M:%SZ"
 ```
 
-## Step 3: Select Next Subsystem
+## Step 3: Show Review State And Ask What To Review
 
-Read the manifest and find the first subsystem with `"status": "pending"`.
+Read the manifest and show all available subsystems before doing any review work.
 
-If all subsystems are `"done"`:
-- Report: "Previous review cycle is complete. Restarting review from the beginning with fresh subsystem discovery."
-- Reinitialize by returning to Step 2 and generating a new manifest.
+### 3.1 Display Review State
 
-Otherwise, mark the selected subsystem as `"in_progress"` by updating the manifest.
+Print a concise table with one row per subsystem:
+
+```markdown
+| ID | Name | Path | Status | Started | Completed |
+| --- | --- | --- | --- | --- | --- |
+| <id> | <name> | <path> | <pending|in_progress|done> | <in_progress_at or -> | <completed_at or never> |
+```
+
+Also report:
+- Manifest path: `workspace/review-state/manifest.json`
+- Review cycle started: `started_at`
+- Counts by status: pending, in_progress, done
+
+### 3.2 Ask For Review Target
+
+Ask the user which subsystem to review now. Do not proceed until the user answers.
+
+Accepted responses:
+- A subsystem `id`, `name`, or `path`: review only that subsystem.
+- `all`: review every subsystem in manifest order, including previously completed subsystems.
+- `pending`: review every subsystem whose status is `pending` or `in_progress`, in manifest order.
+- `restart`: discard the current manifest and return to Step 2 for fresh subsystem discovery.
+- `cancel`: stop without changing review state.
+
+If the user chooses a subsystem that is already `done`, re-review it by setting it back to `in_progress`.
+
+### 3.3 Mark Selected Subsystem(s) In Progress
+
+For each subsystem selected for review:
+1. Set subsystem status to `"in_progress"` before gathering context.
+2. Add or update `"in_progress_at": "<ISO timestamp>"`.
+3. Preserve any existing `"completed_at"` until Step 9 replaces it after the new review finishes.
+
+For `all` or `pending`, run Steps 4 through 11 for each selected subsystem in deterministic manifest order before reporting final completion.
 
 ## Step 4: Gather Subsystem Context
 
@@ -381,7 +412,8 @@ Calculate and report:
 - How many subsystems reviewed vs total
 - How many findings by severity for this subsystem
 - How many tasks created
-- Next steps
+- Remaining subsystem counts by status
+- Next steps based on the selected mode
 
 Example output:
 ```
@@ -389,8 +421,9 @@ Example output:
 
 **Findings**: <critical> CRITICAL, <major> MAJOR, <minor> MINOR, <nit> NIT
 **Tasks Created**: <count> (workspace/tasks/todo/<task-id>-*, ...)
+**Remaining**: <pending> pending, <in_progress> in_progress, <done> done
 
-Run `/brutal-project-review` again to continue with the next subsystem.
+Run `/brutal-project-review` again to choose another subsystem, `pending`, or `all`.
 ```
 
 ## Step 11: Cleanup Context File
