@@ -40,6 +40,22 @@ class PostGithubReviewTests(unittest.TestCase):
             self.assertEqual(planned["summary_findings"][0]["fingerprint"], "f2")
             self.assertNotIn("POST", " ".join(" ".join(call) for call in read_calls(env)))
 
+    def test_live_mode_posts_by_default_and_reports_structured_result(self):
+        with fake_gh() as env:
+            result = run_script(base_payload(), env)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            posted = json.loads(result.stdout)
+            self.assertEqual(posted["status"], "posted")
+            self.assertEqual(posted["repo"], "O/R")
+            self.assertEqual(posted["pr_number"], 1)
+            self.assertEqual(posted["summary"]["action"], "create_summary")
+            self.assertEqual(posted["inline_count"], 1)
+            self.assertEqual(posted["inline"][0]["action"], "create_inline")
+            self.assertEqual(posted["inline"][0]["fingerprint"], "f1")
+            flat = [" ".join(call) for call in read_calls(env)]
+            self.assertTrue(any("POST repos/O/R/pulls/1/comments" in call for call in flat))
+            self.assertTrue(any("POST repos/O/R/issues/1/comments" in call for call in flat))
+
     def test_patches_existing_generated_comments(self):
         with fake_gh(
             issue_comments=[
@@ -51,6 +67,9 @@ class PostGithubReviewTests(unittest.TestCase):
         ) as env:
             result = run_script(base_payload(findings=[inline_finding("f1")]), env)
             self.assertEqual(result.returncode, 0, result.stderr)
+            posted = json.loads(result.stdout)
+            self.assertEqual(posted["summary"]["action"], "patch_summary")
+            self.assertEqual(posted["inline"][0]["action"], "patch_inline")
             calls = read_calls(env)
             flat = [" ".join(call) for call in calls]
             self.assertTrue(any("PATCH repos/O/R/issues/comments/10" in call for call in flat))
@@ -108,9 +127,18 @@ class PostGithubReviewTests(unittest.TestCase):
 
     def test_refuses_fork_without_explicit_allowance(self):
         with fake_gh(head_repo="Other/Fork") as env:
-            result = run_script(base_payload(), env, "--dry-run")
+            result = run_script(base_payload(), env)
             self.assertEqual(result.returncode, 2)
             self.assertIn("refusing to post to fork", result.stderr)
+
+    def test_dry_run_allows_fork_preview_without_posting(self):
+        with fake_gh(head_repo="Other/Fork") as env:
+            result = run_script(base_payload(), env, "--dry-run")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            planned = json.loads(result.stdout)
+            self.assertEqual(planned["inline"][0]["action"], "create_inline")
+            flat = [" ".join(call) for call in read_calls(env)]
+            self.assertFalse(any("POST" in call or "PATCH" in call for call in flat))
 
     def test_preserves_hidden_markers_in_rendered_bodies(self):
         with fake_gh() as env:

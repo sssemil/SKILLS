@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Post or preview generated GitHub PR review comments.
+"""Post generated GitHub PR review comments, or preview them with --dry-run.
 
 The script is intentionally conservative: it verifies the PR head SHA, refuses
 unsafe inline mappings, patches only comments with this skill's hidden markers,
 and falls back to the summary for anything that cannot be represented inline.
+Live posting is the default; pass --dry-run to preview without writing.
 """
 
 from __future__ import annotations
@@ -63,7 +64,7 @@ class Finding:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--payload", default="-", help="Review payload JSON path, or '-' for stdin")
-    parser.add_argument("--dry-run", action="store_true", help="Print planned actions without writing comments")
+    parser.add_argument("--dry-run", action="store_true", help="Preview planned actions without posting comments")
     parser.add_argument("--allow-fork", action="store_true", help="Allow posting to PRs from forked repositories")
     args = parser.parse_args()
 
@@ -73,7 +74,7 @@ def main() -> int:
         require_gh()
 
         pr = gh_json(["api", f"repos/{repo}/pulls/{pr_number}"])
-        verify_pr(repo, head_sha, pr, allow_fork=args.allow_fork)
+        verify_pr(repo, head_sha, pr, allow_fork=args.allow_fork or args.dry_run)
         author_login = authenticated_login()
 
         issue_comments = gh_json_paginated(f"repos/{repo}/issues/{pr_number}/comments?per_page=100")
@@ -99,7 +100,7 @@ def main() -> int:
         latest_pr = gh_json(["api", f"repos/{repo}/pulls/{pr_number}"])
         verify_pr(repo, head_sha, latest_pr, allow_fork=args.allow_fork)
         execute_actions(actions)
-        print(json.dumps({"posted": summarize_actions(actions)}, indent=2, sort_keys=True))
+        print(json.dumps(summarize_actions(actions, status="posted"), indent=2, sort_keys=True))
         return 0
     except ReviewError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -508,10 +509,28 @@ def apply_action(action: dict[str, Any]) -> None:
     run_gh(args)
 
 
-def summarize_actions(actions: dict[str, Any]) -> dict[str, int | str]:
+def summarize_actions(actions: dict[str, Any], *, status: str) -> dict[str, Any]:
     return {
-        "summary": actions["summary"]["action"],
-        "inline": len(actions["inline"]),
+        "status": status,
+        "repo": actions["repo"],
+        "pr_number": actions["pr_number"],
+        "head_sha": actions["head_sha"],
+        "summary": {
+            "action": actions["summary"]["action"],
+            "comment_id": actions["summary"].get("comment_id"),
+        },
+        "inline": [
+            {
+                "action": action["action"],
+                "fingerprint": action.get("fingerprint"),
+                "comment_id": action.get("comment_id"),
+                "path": action.get("path"),
+                "line": action.get("line"),
+                "side": action.get("side"),
+            }
+            for action in actions["inline"]
+        ],
+        "inline_count": len(actions["inline"]),
         "summary_findings": len(actions["summary_findings"]),
     }
 

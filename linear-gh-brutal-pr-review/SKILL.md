@@ -7,16 +7,22 @@ description: Review GitHub pull requests against their Linear tickets with bruta
 
 Run a Linear-aware, GitHub-native PR review. Gather the Linear ticket, GitHub
 PR state, prior comments, diff, and code context; launch specialist reviewers;
-validate findings; then post comment-only feedback to the PR.
+validate findings; post comment-only feedback to the PR by default; then print
+the same validated findings in the final response.
 
 ## Hard Rules
 
 - Use Linear as read-only context. Do not update Linear issues or comments.
 - Use GitHub comments only. Never approve or request changes automatically.
-- If the invocation does not clearly ask to comment/post on GitHub, prepare a
-  preview or run `scripts/post_github_review.py --dry-run`.
+- Post GitHub comments by default after synthesis. Use dry-run only when the
+  user explicitly asks for preview, dry-run, no-post, or when live posting is
+  blocked by a safety guard.
+- Always include the validated review findings in the final response, even
+  after successful GitHub posting.
 - Stop before reviewing if exactly one Linear issue cannot be resolved.
 - Stop before posting if the PR head SHA changed after context collection.
+- Do not post to fork/external PRs unless the user explicitly allows it; use
+  dry-run or stop instead.
 - Do not post speculative findings. Validate each finding against the diff and
   surrounding code first.
 - Do not edit human GitHub comments. Only patch comments authored by the active
@@ -136,7 +142,7 @@ Prepare GitHub-ready output:
 - Include confidence when it helps reviewers prioritize, but keep PR comments
   concise and actionable.
 
-## Step 7: Post Or Preview GitHub Comments
+## Step 7: Post GitHub Comments And Print Review
 
 Create a payload for `scripts/post_github_review.py`:
 
@@ -162,19 +168,52 @@ Create a payload for `scripts/post_github_review.py`:
 }
 ```
 
-Run dry-run unless the user clearly requested live PR comments:
+For normal invocation, post live GitHub comments:
+
+```bash
+python3 linear-gh-brutal-pr-review/scripts/post_github_review.py --payload review.json
+```
+
+Use dry-run only when the user explicitly asks for preview, dry-run, or no-post:
 
 ```bash
 python3 linear-gh-brutal-pr-review/scripts/post_github_review.py --payload review.json --dry-run
-python3 linear-gh-brutal-pr-review/scripts/post_github_review.py --payload review.json
 ```
 
 The script verifies the current head SHA, refuses unsafe inline mappings, avoids
 duplicate generated comments with hidden fingerprints, and truncates oversized
 comment bodies predictably.
 
+Generate the final chat response from the synthesized validated findings and
+the helper's structured posting result. Do not scrape GitHub comments to
+reconstruct the review.
+
 ## Final Response
 
-Report the PR, Linear issue, number of inline comments posted or previewed,
-summary comment status, checks run, and any blockers that prevented posting.
-Keep the response concise and factual.
+Use this shape:
+
+```markdown
+Posted:
+- PR: <number/url>
+- Linear: <identifier>
+- Head: <sha>
+- Summary comment: <created|patched|dry-run|blocked>
+- Inline comments: <count> (<created|patched counts if useful>)
+
+Not posted:
+- <None, or exact safety blocker>
+
+Findings:
+### CRITICAL
+- <file:line> <finding and fix>
+### MAJOR
+- <file:line> <finding and fix>
+### MINOR / NIT
+- <summary-only findings if relevant>
+
+Checks:
+- <local and GitHub checks with pass/fail/pending and notable failure reason>
+```
+
+Keep the response concise, but include the actual validated findings. Do not
+only report the payload path or comment counts.
