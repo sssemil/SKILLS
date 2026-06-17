@@ -1,0 +1,4 @@
+interface:
+  display_name: "Linear GH Brutal PR Review"
+  short_description: "Brutal PR reviews with Linear and GitHub"
+  default_prompt: "Use $linear-gh-brutal-pr-review to review the current GitHub PR against its Linear ticket and comment on the PR."
