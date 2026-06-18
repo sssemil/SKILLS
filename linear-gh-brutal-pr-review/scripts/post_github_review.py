@@ -2,9 +2,10 @@
 """Post generated GitHub PR review comments, or preview them with --dry-run.
 
 The script is intentionally conservative: it verifies the PR head SHA, refuses
-unsafe inline mappings, patches only comments with this skill's hidden markers,
-and falls back to the summary for anything that cannot be represented inline.
-Live posting is the default; pass --dry-run to preview without writing.
+unsafe inline mappings, patches only generated inline comments with this
+skill's hidden markers, creates append-only summaries, and falls back to the
+summary for anything that cannot be represented inline. Live posting is the
+default; pass --dry-run to preview without writing.
 """
 
 from __future__ import annotations
@@ -267,7 +268,6 @@ def plan_actions(
     if not isinstance(review_comments, list):
         raise ReviewError("review comments response must be a list")
 
-    existing_summary = find_unique_comment(issue_comments, SUMMARY_MARKER, author_login)
     existing_inline = collect_existing_inline(review_comments, author_login, head_sha)
 
     inline_actions = []
@@ -278,7 +278,7 @@ def plan_actions(
             if invalid_reason:
                 summary_findings.append(summary_item(finding, invalid_reason))
                 continue
-            body = trim_comment(f"{finding.marker}\n{finding.body}")
+            body = trim_comment(f"{finding.marker}\n**Severity:** {finding.severity}\n\n{finding.body}")
             existing = existing_inline.get(finding.marker)
             if existing and existing.get("commit_id") == head_sha:
                 inline_actions.append(
@@ -310,19 +310,11 @@ def plan_actions(
             summary_findings.append(summary_item(finding, finding.fallback_reason or "not eligible for inline comment"))
 
     summary_body = build_summary_body(summary, summary_findings)
-    if existing_summary:
-        summary_action = {
-            "action": "patch_summary",
-            "comment_id": existing_summary["id"],
-            "endpoint": f"repos/{repo}/issues/comments/{existing_summary['id']}",
-            "body": summary_body,
-        }
-    else:
-        summary_action = {
-            "action": "create_summary",
-            "endpoint": f"repos/{repo}/issues/{pr_number}/comments",
-            "body": summary_body,
-        }
+    summary_action = {
+        "action": "create_summary",
+        "endpoint": f"repos/{repo}/issues/{pr_number}/comments",
+        "body": summary_body,
+    }
 
     return {
         "repo": repo,
@@ -332,20 +324,6 @@ def plan_actions(
         "inline": inline_actions,
         "summary_findings": summary_findings,
     }
-
-
-def find_unique_comment(comments: list[Any], marker: str, author_login: str) -> dict[str, Any] | None:
-    matches = []
-    for comment in comments:
-        if (
-            isinstance(comment, dict)
-            and comment_author(comment) == author_login
-            and str(comment.get("body", "")).startswith(marker)
-        ):
-            matches.append(comment)
-    if len(matches) > 1:
-        raise ReviewError(f"multiple generated comments found for marker {marker}")
-    return matches[0] if matches else None
 
 
 def collect_existing_inline(comments: list[Any], author_login: str, head_sha: str) -> dict[str, dict[str, Any]]:

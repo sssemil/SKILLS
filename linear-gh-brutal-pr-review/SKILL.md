@@ -25,8 +25,11 @@ the same validated findings in the final response.
   dry-run or stop instead.
 - Do not post speculative findings. Validate each finding against the diff and
   surrounding code first.
-- Do not edit human GitHub comments. Only patch comments authored by the active
-  `gh` user and starting with this skill's exact hidden marker.
+- Re-runs must create a new generated summary comment. Do not patch or delete
+  earlier generated summaries.
+- Do not edit human GitHub comments. Only patch generated inline comments
+  authored by the active `gh` user and starting with this skill's exact hidden
+  marker.
 - If subagent tooling is unavailable, stop unless the user explicitly allows a
   single-agent fallback.
 
@@ -180,9 +183,9 @@ Use dry-run only when the user explicitly asks for preview, dry-run, or no-post:
 python3 linear-gh-brutal-pr-review/scripts/post_github_review.py --payload review.json --dry-run
 ```
 
-The script verifies the current head SHA, refuses unsafe inline mappings, avoids
-duplicate generated comments with hidden fingerprints, and truncates oversized
-comment bodies predictably.
+The script verifies the current head SHA, refuses unsafe inline mappings,
+dedupes or patches generated inline comments with hidden fingerprints, creates
+append-only summaries, and truncates oversized comment bodies predictably.
 
 Generate the final chat response from the synthesized validated findings and
 the helper's structured posting result. Do not scrape GitHub comments to
@@ -197,7 +200,7 @@ Posted:
 - PR: <number/url>
 - Linear: <identifier>
 - Head: <sha>
-- Summary comment: <created|patched|dry-run|blocked>
+- Summary comment: <created|dry-run|blocked>
 - Inline comments: <count> (<created|patched counts if useful>)
 
 Not posted:

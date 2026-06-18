@@ -37,6 +37,7 @@ class PostGithubReviewTests(unittest.TestCase):
             planned = json.loads(result.stdout)
             self.assertEqual(planned["summary"]["action"], "create_summary")
             self.assertEqual(planned["inline"][0]["action"], "create_inline")
+            self.assertIn("**Severity:** CRITICAL", planned["inline"][0]["body"])
             self.assertEqual(planned["summary_findings"][0]["fingerprint"], "f2")
             self.assertNotIn("POST", " ".join(" ".join(call) for call in read_calls(env)))
 
@@ -56,7 +57,7 @@ class PostGithubReviewTests(unittest.TestCase):
             self.assertTrue(any("POST repos/O/R/pulls/1/comments" in call for call in flat))
             self.assertTrue(any("POST repos/O/R/issues/1/comments" in call for call in flat))
 
-    def test_patches_existing_generated_comments(self):
+    def test_posts_new_summary_and_patches_existing_inline_comment(self):
         with fake_gh(
             issue_comments=[
                 generated_comment(10, "<!-- linear-gh-brutal-pr-review:summary -->\nold")
@@ -68,12 +69,25 @@ class PostGithubReviewTests(unittest.TestCase):
             result = run_script(base_payload(findings=[inline_finding("f1")]), env)
             self.assertEqual(result.returncode, 0, result.stderr)
             posted = json.loads(result.stdout)
-            self.assertEqual(posted["summary"]["action"], "patch_summary")
+            self.assertEqual(posted["summary"]["action"], "create_summary")
             self.assertEqual(posted["inline"][0]["action"], "patch_inline")
             calls = read_calls(env)
             flat = [" ".join(call) for call in calls]
-            self.assertTrue(any("PATCH repos/O/R/issues/comments/10" in call for call in flat))
+            self.assertTrue(any("POST repos/O/R/issues/1/comments" in call for call in flat))
+            self.assertFalse(any("PATCH repos/O/R/issues/comments/10" in call for call in flat))
             self.assertTrue(any("PATCH repos/O/R/pulls/comments/20" in call for call in flat))
+
+    def test_multiple_existing_generated_summaries_do_not_block_new_summary(self):
+        with fake_gh(
+            issue_comments=[
+                generated_comment(10, "<!-- linear-gh-brutal-pr-review:summary -->\nold"),
+                generated_comment(11, "<!-- linear-gh-brutal-pr-review:summary -->\nolder"),
+            ],
+        ) as env:
+            result = run_script(base_payload(), env, "--dry-run")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            planned = json.loads(result.stdout)
+            self.assertEqual(planned["summary"]["action"], "create_summary")
 
     def test_stale_head_sha_aborts(self):
         with fake_gh(head_sha="def456") as env:
