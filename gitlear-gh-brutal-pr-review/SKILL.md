@@ -1,29 +1,28 @@
 ---
-name: linear-gh-brutal-pr-review
-description: Review GitHub pull requests against their Linear tickets with brutal multi-perspective scrutiny and direct GitHub PR comments. Use when Codex is asked to run $linear-gh-brutal-pr-review, perform a Linear-aware GitHub PR review, check PR alignment with a Linear issue, inspect existing GitHub/Linear comments before reviewing, or post review comments directly to a GitHub PR. Supports Rust deeply via a Rust review profile and can be extended with additional language profiles.
+name: gitlear-gh-brutal-pr-review
+description: Review GitHub pull requests against their Gitlear issues with brutal multi-perspective scrutiny and direct GitHub PR comments. Use when Codex is asked to run $gitlear-gh-brutal-pr-review, perform a Gitlear-aware GitHub PR review, check PR alignment with a Gitlear issue, inspect existing GitHub/Gitlear context before reviewing, or post review comments directly to a GitHub PR. Supports Rust deeply via a Rust review profile.
 ---
 
-# Linear GH Brutal PR Review
+# Gitlear GH Brutal PR Review
 
-Run a Linear-aware, GitHub-native PR review. Gather the Linear ticket, GitHub
+Run a Gitlear-aware, GitHub-native PR review. Gather the Gitlear issue, GitHub
 PR state, prior comments, diff, and code context; launch specialist reviewers;
 validate findings; post comment-only feedback to the PR by default; then print
 the same validated findings in the final response.
 
 ## Hard Rules
 
-- Use Linear as read-only context. Do not update Linear issues or comments.
+- Use Gitlear as read-only context. Do not update Gitlear issues or comments.
 - Use GitHub comments only. Never approve or request changes automatically.
 - Post GitHub comments by default after synthesis. Use dry-run only when the
   user explicitly asks for preview, dry-run, no-post, or when live posting is
   blocked by a safety guard.
-- Always include the validated review findings in the final response, even
-  after successful GitHub posting.
-- Stop before reviewing if exactly one Linear issue cannot be resolved.
+- Always include validated review findings in the final response.
+- Stop before reviewing if exactly one Gitlear issue cannot be resolved.
 - Stop before posting if the PR head SHA changed after context collection.
 - Do not post to fork/external PRs unless the user explicitly allows it; use
   dry-run or stop instead.
-- Do not post speculative findings. Validate each finding against the diff and
+- Do not post speculative findings. Validate every finding against the diff and
   surrounding code first.
 - Re-runs must create a new generated summary comment. Do not patch or delete
   earlier generated summaries.
@@ -36,9 +35,22 @@ the same validated findings in the final response.
 - If subagent tooling is unavailable, stop unless the user explicitly allows a
   single-agent fallback.
 
+## Gitlear Context Rules
+
+- Read `AGENTS.md` and require `Gitlear workspace: <name or key_prefix>` and
+  `Gitlear project: <name>`.
+- Validate the active Gitlear MCP workspace with `gitlear_workspace_get`.
+- Resolve the project with `gitlear_project_list`, then use the returned
+  internal project id.
+- Current MCP issue snapshots omit status, project, body, and comments. For
+  issue body, comments, and project membership, read raw Markdown under
+  `gitlear_workspace_get.root`.
+- Verify the resolved issue belongs to the resolved project by checking its raw
+  path under `projects/<project-id>/issues/<status>/`.
+
 ## Step 1: Resolve The PR
 
-Resolve the target PR from the explicit URL, number, branch, or current branch.
+Resolve the target PR from an explicit URL, number, branch, or current branch.
 Use `gh` and fail early if it is unavailable or unauthenticated.
 
 Gather:
@@ -57,49 +69,55 @@ gh api repos/{owner}/{repo}/issues/{number}/comments --paginate
 gh api repos/{owner}/{repo}/pulls/{number}/reviews --paginate
 ```
 
-Record `repo`, `pr_number`, `head_sha`, whether the PR is from a fork, and the
-base branch. Do not post to fork/external PRs unless explicitly allowed.
+Record `repo`, `pr_number`, `head_sha`, fork status, and base branch.
 
-## Step 2: Resolve Linear Context
+## Step 2: Resolve Gitlear Context
 
-Extract possible Linear identifiers and URLs from the branch name, PR title,
-PR body, commits, and linked issue text. Normalize to uppercase identifiers,
-dedupe aliases, and resolve each candidate through Linear MCP.
-
-- If exactly one Linear issue resolves, fetch full issue details with relations,
-  releases, customer needs when available, attachments/links, and comments.
-- If zero or multiple plausible issues resolve, ask the user for the intended
-  Linear issue before continuing.
-- Include Linear comments and issue state in the review context. Alignment
-  findings should cite the relevant Linear requirement or comment.
+1. Read `AGENTS.md`.
+2. Validate `Gitlear workspace:` against `gitlear_workspace_get`.
+3. Resolve `Gitlear project:` through `gitlear_project_list`.
+4. Extract possible Gitlear issue candidates from branch name, PR title, PR
+   body, commits, and linked issue text:
+   - display keys using the active workspace key prefix, such as `TQD-123`
+   - internal ids matching the workspace prefix, when present
+   - title/search terms through `gitlear_search` or `gitlear_issue_list`
+5. Dedupe candidates and resolve each through `gitlear_issue_get` when
+   available, or by matching raw Markdown files under the Gitlear workspace.
+6. Require exactly one issue in the resolved project. If zero or multiple
+   plausible issues remain, ask the user for the intended Gitlear issue before
+   continuing.
+7. Read the full raw issue body, comments, status, labels, and path-derived
+   project membership. Alignment findings should cite the relevant Gitlear
+   requirement or comment.
 
 ## Step 3: Gather Code Context
 
-Read repo instructions such as `AGENTS.md`, `CLAUDE.md`, `README`, CI workflows,
-`justfile`, `Makefile`, and package manifests when relevant. Read every changed
-file in full and inspect direct call sites, trait/interface implementations,
-tests, feature flags, config schemas, and generated/public API boundaries touched
-by the diff.
+Read repo instructions such as `AGENTS.md`, `CLAUDE.md`, `README`, CI
+workflows, `justfile`, `Makefile`, and package manifests when relevant. Read
+every changed file in full and inspect direct call sites, trait/interface
+implementations, tests, feature flags, config schemas, and generated/public API
+boundaries touched by the diff.
 
 Load language profiles only when relevant:
 
 - For Rust files or Cargo manifests, read `references/rust.md`.
 
 Prefer project-specific verification commands. Run deterministic checks when
-practical, but distinguish pre-existing failures from PR-caused failures.
+practical, distinguishing pre-existing failures from PR-caused failures.
 
 ## Step 4: Build Review Context
 
 Write a complete context file:
 
 ```text
-/tmp/linear-gh-brutal-pr-review-<repo-slug>-pr-<number>.md
+/tmp/gitlear-gh-brutal-pr-review-<repo-slug>-pr-<number>.md
 ```
 
 Include:
 
 - PR metadata, head SHA, checks, changed files, and full diff
-- Linear issue body, comments, links, relations, and acceptance criteria
+- Gitlear workspace/project identity
+- Gitlear issue body, comments, labels, status, path, and acceptance criteria
 - Existing GitHub issue comments, review comments, review states, and checks
 - Repo rules, relevant manifests, changed files, callers, and test context
 - Loaded language-profile notes and verification results
@@ -108,19 +126,19 @@ Subagents must read this file first. Do not rely on inherited context.
 
 ## Step 5: Launch Reviewers
 
-Launch all five reviewers in parallel. Each reviewer returns findings with:
+Launch all five reviewers in parallel. Each reviewer returns findings with
 severity, confidence, file/line/snippet, explanation, concrete fix, and whether
 the finding should be inline or summary-only.
 
 Reviewer perspectives:
 
-- **Linear/Product Alignment**: verify the PR implements the Linear ticket,
-  acceptance criteria, customer notes, and latest comments without hidden scope
-  drift or missing behavior.
+- **Gitlear/Product Alignment**: verify the PR implements the Gitlear issue,
+  acceptance criteria, notes, and latest comments without hidden scope drift or
+  missing behavior.
 - **Core Correctness/Architecture**: verify algorithms, state transitions,
   public APIs, data flow, compatibility, and architectural placement.
-- **Reliability/Testing/Error Handling**: verify tests, edge cases, error paths,
-  panics, retries, cancellation, and failure behavior.
+- **Reliability/Testing/Error Handling**: verify tests, edge cases, error
+  paths, panics, retries, cancellation, and failure behavior.
 - **Performance/Security/Concurrency**: verify allocation, hot paths, locks,
   async boundaries, permissions, injection, secrets, and resource growth.
 - **Simplicity/Maintainability**: verify needless code, abstractions, naming,
@@ -135,24 +153,17 @@ Use severities:
 
 ## Step 6: Synthesize And Validate
 
-Merge duplicate findings, discard false positives, and validate every remaining
-finding against the current diff and surrounding code. Do not forward subagent
-claims blindly.
+Merge duplicates, discard false positives, and validate every remaining finding
+against the current diff and surrounding code.
 
 Prepare GitHub-ready output:
 
 - Inline comments only for validated `CRITICAL` and `MAJOR` findings with exact
   current-diff line mappings.
-- Summary-only comments for `MINOR`, `NIT`, cross-file concerns, Linear
+- Summary-only comments for `MINOR`, `NIT`, cross-file concerns, Gitlear
   alignment summaries, verification output, and unmappable findings.
-- Include confidence when it helps reviewers prioritize, but keep PR comments
-  concise and actionable.
-
-In explicit all-findings mode, queue validated `CRITICAL`, `MAJOR`, `MINOR`,
-and `NIT` findings when they are concrete and line-mappable. Do not queue vague
-style preferences or subjective cleanup. Prefer Rust findings that remove
-needless ownership, optionality, allocation, abstraction, or error-handling
-noise while preserving behavior.
+- In explicit all-findings mode, queue validated `CRITICAL`, `MAJOR`, `MINOR`,
+  and `NIT` findings when concrete and line-mappable.
 
 ## Step 7: Post GitHub Comments And Print Review
 
@@ -180,32 +191,27 @@ Create a payload for `scripts/post_github_review.py`:
 }
 ```
 
-Omit `inline_severities` in normal mode; the helper defaults to `CRITICAL` and
-`MAJOR`. In explicit all-findings mode, set:
+Omit `inline_severities` in normal mode. In all-findings mode, set:
 
 ```json
 "inline_severities": ["CRITICAL", "MAJOR", "MINOR", "NIT"]
 ```
 
-For normal invocation, post live GitHub comments:
+Post live comments:
 
 ```bash
-python3 linear-gh-brutal-pr-review/scripts/post_github_review.py --payload review.json
+python3 /home/user/Workspaces/SKILLS/gitlear-gh-brutal-pr-review/scripts/post_github_review.py --payload review.json
 ```
 
-Use dry-run only when the user explicitly asks for preview, dry-run, or no-post:
+Use dry-run only when explicitly requested:
 
 ```bash
-python3 linear-gh-brutal-pr-review/scripts/post_github_review.py --payload review.json --dry-run
+python3 /home/user/Workspaces/SKILLS/gitlear-gh-brutal-pr-review/scripts/post_github_review.py --payload review.json --dry-run
 ```
 
-The script verifies the current head SHA, refuses unsafe inline mappings,
-dedupes or patches generated inline comments with hidden fingerprints, creates
-append-only summaries, and truncates oversized comment bodies predictably.
-
-Generate the final chat response from the synthesized validated findings and
-the helper's structured posting result. Do not scrape GitHub comments to
-reconstruct the review.
+The helper verifies current head SHA, refuses unsafe inline mappings, dedupes or
+patches generated inline comments with `gitlear-gh-brutal-pr-review` hidden
+markers, creates append-only summaries, and truncates oversized comments.
 
 ## Final Response
 
@@ -214,10 +220,10 @@ Use this shape:
 ```markdown
 Posted:
 - PR: <number/url>
-- Linear: <identifier>
+- Gitlear: <display key>
 - Head: <sha>
 - Summary comment: <created|dry-run|blocked>
-- Inline comments: <count> (<created|patched counts if useful>)
+- Inline comments: <count>
 
 Not posted:
 - <None, or exact safety blocker>
@@ -233,6 +239,3 @@ Findings:
 Checks:
 - <local and GitHub checks with pass/fail/pending and notable failure reason>
 ```
-
-Keep the response concise, but include the actual validated findings. Do not
-only report the payload path or comment counts.

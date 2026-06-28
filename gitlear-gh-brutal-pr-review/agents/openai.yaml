@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gitlear GH Brutal PR Review"
+  short_description: "PR reviews against Gitlear issues"
+  default_prompt: "Use $gitlear-gh-brutal-pr-review to review the current GitHub PR against its Gitlear issue."

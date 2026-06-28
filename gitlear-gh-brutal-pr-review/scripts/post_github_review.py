@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 
-TOOL = "linear-gh-brutal-pr-review"
+TOOL = "gitlear-gh-brutal-pr-review"
 SUMMARY_MARKER = f"<!-- {TOOL}:summary -->"
 FINGERPRINT_PREFIX = f"<!-- {TOOL}:"
 FINGERPRINT_RE = re.compile(r"^[A-Za-z0-9._:-]+$")
@@ -468,7 +468,7 @@ def build_summary_body(summary: str, summary_findings: list[dict[str, Any]]) -> 
 def trim_comment(body: str) -> str:
     if len(body) <= MAX_COMMENT_LENGTH:
         return body
-    suffix = "\n\n[Truncated by linear-gh-brutal-pr-review because the GitHub comment limit was reached.]"
+    suffix = "\n\n[Truncated by gitlear-gh-brutal-pr-review because the GitHub comment limit was reached.]"
     return body[: MAX_COMMENT_LENGTH - len(suffix)] + suffix
 
 

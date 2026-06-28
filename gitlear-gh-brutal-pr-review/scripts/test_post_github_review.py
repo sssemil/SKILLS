@@ -80,10 +80,10 @@ class PostGithubReviewTests(unittest.TestCase):
     def test_posts_new_summary_and_patches_existing_inline_comment(self):
         with fake_gh(
             issue_comments=[
-                generated_comment(10, "<!-- linear-gh-brutal-pr-review:summary -->\nold")
+                generated_comment(10, "<!-- gitlear-gh-brutal-pr-review:summary -->\nold")
             ],
             review_comments=[
-                generated_comment(20, "<!-- linear-gh-brutal-pr-review:f1 -->\nold", commit_id="abc123")
+                generated_comment(20, "<!-- gitlear-gh-brutal-pr-review:f1 -->\nold", commit_id="abc123")
             ],
         ) as env:
             result = run_script(base_payload(findings=[inline_finding("f1")]), env)
@@ -100,8 +100,8 @@ class PostGithubReviewTests(unittest.TestCase):
     def test_multiple_existing_generated_summaries_do_not_block_new_summary(self):
         with fake_gh(
             issue_comments=[
-                generated_comment(10, "<!-- linear-gh-brutal-pr-review:summary -->\nold"),
-                generated_comment(11, "<!-- linear-gh-brutal-pr-review:summary -->\nolder"),
+                generated_comment(10, "<!-- gitlear-gh-brutal-pr-review:summary -->\nold"),
+                generated_comment(11, "<!-- gitlear-gh-brutal-pr-review:summary -->\nolder"),
             ],
         ) as env:
             result = run_script(base_payload(), env, "--dry-run")
@@ -151,7 +151,7 @@ class PostGithubReviewTests(unittest.TestCase):
     def test_existing_inline_from_old_head_creates_new_comment(self):
         with fake_gh(
             review_comments=[
-                generated_comment(20, "<!-- linear-gh-brutal-pr-review:f1 -->\nold", commit_id="oldsha")
+                generated_comment(20, "<!-- gitlear-gh-brutal-pr-review:f1 -->\nold", commit_id="oldsha")
             ],
         ) as env:
             result = run_script(base_payload(findings=[inline_finding("f1")]), env, "--dry-run")
@@ -195,8 +195,8 @@ class PostGithubReviewTests(unittest.TestCase):
             result = run_script(payload, env, "--dry-run")
             self.assertEqual(result.returncode, 0, result.stderr)
             planned = json.loads(result.stdout)
-            self.assertIn("<!-- linear-gh-brutal-pr-review:summary -->", planned["summary"]["body"])
-            self.assertIn("<!-- linear-gh-brutal-pr-review:f1 -->", planned["inline"][0]["body"])
+            self.assertIn("<!-- gitlear-gh-brutal-pr-review:summary -->", planned["summary"]["body"])
+            self.assertIn("<!-- gitlear-gh-brutal-pr-review:f1 -->", planned["inline"][0]["body"])
             self.assertIn("Keep **markdown** intact.", planned["summary"]["body"])
 
     def test_invalid_inline_line_falls_back_to_summary(self):
@@ -212,7 +212,7 @@ class PostGithubReviewTests(unittest.TestCase):
             issue_comments=[
                 {
                     "id": 10,
-                    "body": "A human quoted this:\n<!-- linear-gh-brutal-pr-review:summary -->",
+                    "body": "A human quoted this:\n<!-- gitlear-gh-brutal-pr-review:summary -->",
                 }
             ]
         ) as env:
@@ -226,7 +226,7 @@ class PostGithubReviewTests(unittest.TestCase):
             review_comments=[
                 generated_comment(
                     20,
-                    "<!-- linear-gh-brutal-pr-review:f1 -->\nnot mine",
+                    "<!-- gitlear-gh-brutal-pr-review:f1 -->\nnot mine",
                     commit_id="abc123",
                     login="someone-else",
                 )
@@ -240,8 +240,8 @@ class PostGithubReviewTests(unittest.TestCase):
     def test_old_and_current_inline_markers_patch_current_comment(self):
         with fake_gh(
             review_comments=[
-                generated_comment(20, "<!-- linear-gh-brutal-pr-review:f1 -->\nold", commit_id="oldsha"),
-                generated_comment(21, "<!-- linear-gh-brutal-pr-review:f1 -->\ncurrent", commit_id="abc123"),
+                generated_comment(20, "<!-- gitlear-gh-brutal-pr-review:f1 -->\nold", commit_id="oldsha"),
+                generated_comment(21, "<!-- gitlear-gh-brutal-pr-review:f1 -->\ncurrent", commit_id="abc123"),
             ]
         ) as env:
             result = run_script(base_payload(), env, "--dry-run")

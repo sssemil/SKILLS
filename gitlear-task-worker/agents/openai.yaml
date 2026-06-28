@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gitlear Task Worker"
+  short_description: "Autonomous worker for Gitlear issues"
+  default_prompt: "Use $gitlear-task-worker to pick up and implement the next Gitlear task."

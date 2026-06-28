@@ -1,28 +1,29 @@
 ---
-name: linear-gh-brutal-pr-finding-fixer
-description: Fix generated GitHub PR review findings from linear-gh-brutal-pr-review one at a time. Use when Codex is asked to run $linear-gh-brutal-pr-finding-fixer, handle generated PR review findings, address brutal PR review comments, reply to resolved GitHub review threads with how findings were handled, or commit fixes for linear-gh-brutal-pr-review output.
+name: gitlear-gh-brutal-pr-finding-fixer
+description: Fix generated GitHub PR review findings from gitlear-gh-brutal-pr-review one at a time. Use when Codex is asked to run $gitlear-gh-brutal-pr-finding-fixer, handle generated Gitlear-aware PR review findings, address brutal PR review comments, reply to resolved GitHub review threads with how findings were handled, or commit fixes for gitlear-gh-brutal-pr-review output.
 ---
 
-# Linear GH Finding Fixer
+# Gitlear GH Finding Fixer
 
 Resolve generated GitHub PR review findings produced by
-`linear-gh-brutal-pr-review`. The queue is GitHub PR review comments, not Linear
-issues.
+`gitlear-gh-brutal-pr-review`. The queue is GitHub PR review comments, not
+Gitlear issues.
 
 ## Hard Rules
 
 - Use `gh` as the source of GitHub truth. Fail early if `gh` is unavailable or
   unauthenticated.
-- Do not update Linear issues, statuses, or comments.
+- Do not require or update Gitlear issues, statuses, or comments.
 - Require a clean worktree before editing unless the user explicitly allows
   working with existing changes. Never revert user changes without explicit
   instruction.
 - Select only top-level PR review comments whose body starts with
-  `<!-- linear-gh-brutal-pr-review:<fingerprint> -->`. Exclude summary markers,
-  issue comments, replies, and quoted markers.
+  `<!-- gitlear-gh-brutal-pr-review:<fingerprint> -->`. Exclude summary
+  markers, issue comments, replies, and quoted markers.
 - Treat comments with `in_reply_to_id` as replies, not queue items.
 - Skip findings already handled by this skill. A handled item has a reply or PR
-  issue comment starting with `<!-- linear-gh-brutal-pr-finding-fixer:<fingerprint> -->`.
+  issue comment starting with
+  `<!-- gitlear-gh-brutal-pr-finding-fixer:<fingerprint> -->`.
 - Process findings one at a time. Create one focused commit per finding, then
   push the PR branch before replying with the commit hash.
 - Never force-push. Stop if a normal push is rejected.
@@ -51,13 +52,13 @@ Record `repo`, `pr_number`, `head_sha`, `headRefName`, `baseRefName`, and
 whether the PR is from a fork. Do not push to fork/external PR branches unless
 the user explicitly allows that workflow.
 
-Check the worktree:
+Check:
 
 ```bash
 git status --short
 ```
 
-If there are unrelated or ambiguous changes, stop and ask before editing.
+If unrelated or ambiguous changes exist, stop and ask before editing.
 
 ## Step 2: Gather Review Comments And Threads
 
@@ -69,7 +70,7 @@ gh api repos/{owner}/{repo}/issues/{number}/comments --paginate
 ```
 
 Use PR review comments for the work queue. Use issue comments only to detect
-prior `linear-gh-finding-fixer` handled markers.
+prior handled markers from this skill.
 
 Fetch all review threads with GraphQL and paginate both `reviewThreads` and
 nested `comments` until `hasNextPage` is false. Capture each thread's `id`,
@@ -85,21 +86,20 @@ For each PR review comment:
 
 1. Require `in_reply_to_id` to be absent or null.
 2. Require the body to start exactly with
-   `<!-- linear-gh-brutal-pr-review:<fingerprint> -->`.
-3. Reject `<!-- linear-gh-brutal-pr-review:summary -->`.
-4. Parse severity from the generated `**Severity:** <level>` line. If an older
-   generated comment lacks severity, process it after known `CRITICAL` findings
-   and before known `MAJOR` findings, preserving GitHub comment order.
+   `<!-- gitlear-gh-brutal-pr-review:<fingerprint> -->`.
+3. Reject `<!-- gitlear-gh-brutal-pr-review:summary -->`.
+4. Parse severity from `**Severity:** <level>`. If an older generated comment
+   lacks severity, process it after known `CRITICAL` findings and before known
+   `MAJOR` findings, preserving GitHub comment order.
 5. Skip the finding if any reply or issue comment starts with
-   `<!-- linear-gh-brutal-pr-finding-fixer:<fingerprint> -->`.
+   `<!-- gitlear-gh-brutal-pr-finding-fixer:<fingerprint> -->`.
 
 Sort unhandled findings by severity: `CRITICAL`, then `MAJOR`. In explicit
-all-severities or fix-loop mode, continue with `MINOR`, then `NIT`. Otherwise,
-only process `MINOR` or `NIT` when the user explicitly asks.
+all-severities or fix-loop mode, continue with `MINOR`, then `NIT`.
 
 If one code change clearly fixes multiple generated findings, finish the
 current finding first, then reply to related fingerprints with the same commit
-hash and disposition so they are not selected again.
+hash and disposition.
 
 ## Step 4: Fix One Finding
 
@@ -110,9 +110,9 @@ For the selected finding:
 2. Confirm the finding is still valid on the current PR head.
 3. Add or update a focused failing test when practical.
 4. Implement the smallest correct fix.
-5. Run the narrow verification first, then any required repo checks.
+5. Run narrow verification first, then required repo checks.
 6. Inspect `git diff` to ensure the change is scoped to this finding.
-7. Commit with a message that references the PR and fingerprint, for example:
+7. Commit with a message such as:
 
 ```text
 Fix PR #123 finding <fingerprint>
@@ -120,8 +120,8 @@ Fix PR #123 finding <fingerprint>
 
 8. Push the PR branch with a normal `git push`.
 
-If the finding is invalid, stale, or already fixed, skip the edit/commit path
-and go directly to Step 5 with a disposition of `skipped`.
+If invalid, stale, or already fixed, skip the edit/commit path and reply with a
+`skipped` disposition.
 
 ## Step 5: Reply To The Review Thread
 
@@ -136,7 +136,7 @@ gh api --method POST \
 Reply body:
 
 ```markdown
-<!-- linear-gh-brutal-pr-finding-fixer:<fingerprint> -->
+<!-- gitlear-gh-brutal-pr-finding-fixer:<fingerprint> -->
 Handled: <fixed|skipped>
 Thread state before reply: <resolved|unresolved>
 Commit: <hash or none>
@@ -144,8 +144,7 @@ Verification: <commands and pass/fail result>
 Notes: <short disposition, residual risk, or why no code change was needed>
 ```
 
-For already-resolved threads, use the same reply format. The point is to leave
-an audit trail without changing the thread state.
+For already-resolved threads, use the same reply format.
 
 ## Step 6: Continue Or Stop
 
@@ -153,18 +152,11 @@ After each pushed commit and handled reply:
 
 - Re-fetch PR head, review comments, issue comments, and review threads.
 - Stop if the PR head changed unexpectedly.
-- Continue to the next unhandled `CRITICAL` or `MAJOR` finding when the user
-  asked for continuous processing. In explicit all-severities or fix-loop mode,
-  continue through unhandled `MINOR` and `NIT` findings too.
+- Continue when the user asked for continuous processing.
 - Otherwise report the one handled finding and stop.
 
 ## Final Response
 
-Summarize:
-
-- PR and finding fingerprint
-- action taken: fixed, skipped, or blocked
-- commit hash and push result
-- verification result
-- reply status and whether the thread was already resolved
-- remaining unhandled generated findings, if known
+Summarize PR, fingerprint, action taken, commit hash and push result,
+verification result, reply status, whether the thread was already resolved, and
+remaining unhandled generated findings if known.
