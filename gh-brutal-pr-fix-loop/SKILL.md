@@ -12,8 +12,8 @@ from `BRUTAL.md`.
 
 Before starting, read:
 
-- `/home/user/Workspaces/SKILLS/gh-brutal-pr-review/SKILL.md`
-- `/home/user/Workspaces/SKILLS/gh-brutal-pr-finding-fixer/SKILL.md`
+- `../gh-brutal-pr-review/SKILL.md`
+- `../gh-brutal-pr-finding-fixer/SKILL.md`
 
 If either source skill conflicts with this skill, follow the source skill for
 the local operation and use this skill only for loop ordering.

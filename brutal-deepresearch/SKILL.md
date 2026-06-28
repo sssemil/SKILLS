@@ -457,18 +457,18 @@ If validation fails, fix the JSON and re-write it.
 ## Progress Tracking
 
 Before starting research, write a marker file to signal that this agent has started:
-Write an empty file to /home/user/workspace/research/DR-0001-ai-coding/results/GitHub_Copilot.started
+Write an empty file to <research_root>/DR-0001-ai-coding/results/GitHub_Copilot.started
 
 After self-validation passes and the JSON result is confirmed correct, delete the marker file:
-rm /home/user/workspace/research/DR-0001-ai-coding/results/GitHub_Copilot.started
+rm <research_root>/DR-0001-ai-coding/results/GitHub_Copilot.started
 
 ## Task
 Research name: GitHub Copilot
 category: International Product
-description: Developed by Microsoft/GitHub, first mainstream AI coding assistant, ~40% market share, output structured JSON to /home/user/workspace/research/DR-0001-ai-coding/results/GitHub_Copilot.json
+description: Developed by Microsoft/GitHub, first mainstream AI coding assistant, ~40% market share, output structured JSON to <research_root>/DR-0001-ai-coding/results/GitHub_Copilot.json
 
 ## Field Definitions
-Read /home/user/workspace/research/DR-0001-ai-coding/fields.yaml to get all field definitions
+Read <research_root>/DR-0001-ai-coding/fields.yaml to get all field definitions
 
 ## Output Requirements
 1. Output JSON according to fields defined in fields.yaml
@@ -484,7 +484,7 @@ After writing the JSON file, read it back and verify:
 If validation fails, fix the JSON and re-write it.
 
 ## Output Path
-/home/user/workspace/research/DR-0001-ai-coding/results/GitHub_Copilot.json
+<research_root>/DR-0001-ai-coding/results/GitHub_Copilot.json
 ```
 
 ### 6.2 Parameter Construction

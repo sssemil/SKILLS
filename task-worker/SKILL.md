@@ -10,7 +10,7 @@ Select and complete implementation tasks from the backend configured in
 
 ## Required Context
 
-1. Read `/home/user/Workspaces/SKILLS/brutal-shared/backend-resolver.md`.
+1. Read `../brutal-shared/backend-resolver.md`.
 2. Resolve the backend and task queue before editing code.
 3. Read repo rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and referenced
    workflow docs.

@@ -10,7 +10,7 @@ comes from local repo docs, Linear, or Gitlear.
 
 ## Required Context
 
-1. Read `/home/user/Workspaces/SKILLS/brutal-shared/backend-resolver.md`.
+1. Read `../brutal-shared/backend-resolver.md`.
 2. Resolve the backend. In `local` mode, issue/ticket context is optional.
 3. Read `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, README, CI workflows, package
    manifests, and relevant repo docs.
@@ -75,13 +75,15 @@ In all-findings mode, include all severities.
 Post comments:
 
 ```bash
-python3 /home/user/Workspaces/SKILLS/gh-brutal-pr-review/scripts/post_github_review.py --payload review.json
+skill_dir="<path-to-gh-brutal-pr-review>"
+python3 "$skill_dir/scripts/post_github_review.py" --payload review.json
 ```
 
 Use dry-run only when explicitly requested:
 
 ```bash
-python3 /home/user/Workspaces/SKILLS/gh-brutal-pr-review/scripts/post_github_review.py --payload review.json --dry-run
+skill_dir="<path-to-gh-brutal-pr-review>"
+python3 "$skill_dir/scripts/post_github_review.py" --payload review.json --dry-run
 ```
 
 ## Final Response

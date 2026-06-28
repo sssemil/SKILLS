@@ -10,9 +10,9 @@ Run the backend-aware hardening loop without dropping instructions from
 
 ## Required Context
 
-1. Read `/home/user/Workspaces/SKILLS/brutal-shared/backend-resolver.md`.
-2. Read `/home/user/Workspaces/SKILLS/brutal-project-review/SKILL.md`.
-3. Read `/home/user/Workspaces/SKILLS/task-worker/SKILL.md`.
+1. Read `../brutal-shared/backend-resolver.md`.
+2. Read `../brutal-project-review/SKILL.md`.
+3. Read `../task-worker/SKILL.md`.
 4. Resolve the backend before checking queues or review state.
 
 ## Loop

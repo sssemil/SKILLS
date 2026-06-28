@@ -10,7 +10,7 @@ tasks through the backend configured in `BRUTAL.md`.
 
 ## Required Context
 
-1. Read `/home/user/Workspaces/SKILLS/brutal-shared/backend-resolver.md`.
+1. Read `../brutal-shared/backend-resolver.md`.
 2. Resolve the backend before creating artifacts.
 3. Read repo rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and any workflow
    docs they reference. `BRUTAL.md` controls persistence; repo instruction files

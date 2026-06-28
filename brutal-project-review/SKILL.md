@@ -10,7 +10,7 @@ findings through the configured backend.
 
 ## Required Context
 
-1. Read `/home/user/Workspaces/SKILLS/brutal-shared/backend-resolver.md`.
+1. Read `../brutal-shared/backend-resolver.md`.
 2. Resolve the backend before initializing state or creating findings.
 3. Read repo rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and referenced
    workflow docs.
