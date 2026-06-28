@@ -1,466 +1,84 @@
 ---
 name: brutal-project-review
-description: Systematically review the entire project subsystem-by-subsystem with resumable state tracking. Creates workspace tasks for CRITICAL/MAJOR findings.
-allowed-tools: Bash(ls:*), Bash(find:*), Bash(wc:*), Bash(date:*), Bash(git add:*), Bash(git commit:*), Task, Read, Write, Edit, Grep, Glob
+description: "Systematically review a project subsystem-by-subsystem with resumable state tracking. Creates CRITICAL/MAJOR finding tasks through the repo's BRUTAL.md backend: local workspace files, Linear, or Gitlear."
 ---
 
-Perform a systematic, ruthless, in-depth code review of the entire project, one subsystem at a time.
+# Brutal Project Review
 
-Agent assumptions (applies to all agents and subagents):
-- All tools are functional and will work without error. Do not test tools or make exploratory calls.
-- Only call a tool if it is required to complete the task. Every tool call should have a clear purpose.
-- All tests have already been run and passed.
-- The entire codebase has already been linted and formatted and is clean.
+Review the project one subsystem at a time and persist actionable CRITICAL/MAJOR
+findings through the configured backend.
 
-# Brutal Project Review Process
+## Required Context
 
-## Step 0: Load Project Target Context
+1. Read `/home/user/Workspaces/SKILLS/brutal-shared/backend-resolver.md`.
+2. Resolve the backend before initializing state or creating findings.
+3. Read repo rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and referenced
+   workflow docs.
+4. If `BRUTAL.md` is missing or incomplete, follow the resolver setup flow.
 
-Before any planning decisions in this workflow (including review scoping and task planning), check for `TARGET.md` in the project root directory.
+## State Rules
 
-- If `TARGET.md` exists, read it in full and treat it as required planning context.
-- Do not proceed to Step 1 until this check/read has been completed.
+- `local` uses `workspace/review-state/` and local tasks.
+- `linear` and `gitlear` use `.brutal-workspace/review-state/` only for local
+  resumable review state. Ensure `.brutal-workspace/` is ignored through
+  `.git/info/exclude` before writing it.
+- Do not create `workspace/plans`, `workspace/tasks`, or
+  `workspace/review-state` for remote backends.
+- Preserve legacy manifest fields when resuming older runs, but write new
+  entries with backend-neutral keys where practical:
+  `backend`, `backend_project`, `parent_ref`, `findings_created`.
 
-## Step 1: Check for Existing State
+## Workflow
 
-First, check if a review is already in progress:
+1. Resolve or initialize the review manifest.
+2. Discover subsystems dynamically from behavior-defining files. Exclude
+   generated/vendor/build folders. Normalize ids as `01`, `02`, etc.
+3. Show the subsystem table and ask what to review: id/name/path, `all`,
+   `pending`, `restart`, or `cancel`.
+4. For each selected subsystem:
+   - mark it `in_progress`
+   - gather relevant code, tests, migrations, APIs, configs, SQL, TOML, and docs
+   - write temporary context under the backend state directory
+   - launch five reviewers when available: core correctness, reliability/tests,
+     maintainability, performance/security, and simplification
+   - synthesize, dedupe, validate, and severity-check findings
+   - write the subsystem report
+   - delete temporary context before stopping or reporting
+5. Only create persisted work for validated `CRITICAL` and `MAJOR` findings by
+   default.
 
-```bash
-ls -la workspace/review-state/manifest.json 2>/dev/null
+## Finding Persistence
+
+Use deterministic fingerprints:
+
+```text
+<subsystem-id>|<canonical-file>|<line-or-symbol>|<severity>|<normalized-title>
 ```
 
-**If manifest.json exists**: Read it and inspect subsystem statuses.
-- If any subsystem is `pending` or `in_progress`, keep the manifest and proceed to Step 3.
-- If all subsystems are `done`, keep the manifest and proceed to Step 3 so the user can choose whether to re-review one subsystem or all subsystems.
-**If manifest.json does not exist**: Initialize a fresh review (proceed to Step 2).
-
-## Step 2: Initialize Fresh Review (Skip if Resuming)
-
-Create the state directory structure and discover subsystems.
-
-### 2.1 Create Directory Structure
-```bash
-mkdir -p workspace/review-state/subsystems
-```
-
-### 2.2 Discover Subsystems Dynamically
-
-Do not hardcode subsystem names or paths. Discover them from the repository on each fresh run.
-
-1. Discover source files:
-   - Include: `.rs`, `.ts`, `.tsx`, `.js`, `.jsx`, `.css`, `.json`
-   - Exclude generated/vendor folders: `.git`, `node_modules`, `target`, `dist`, `build`, `.next`, `coverage`, `vendor`
-2. Derive subsystem paths from each source file using these rules:
-   - If path matches `*/src/<segment>/...`, use `*/src/<segment>/`
-   - If path is directly under `*/src/`, use `*/src/` (entrypoints/core files)
-   - If path matches `*/app/...`, use `*/app/`
-   - Otherwise, use the nearest package root that owns the file (for example `apps/<name>/`, `libs/<name>/`, `packages/<name>/`, `services/<name>/`, `crates/<name>/`)
-3. Normalize subsystem paths:
-   - Convert to repository-relative paths
-   - Remove duplicates
-   - Sort for deterministic ordering
-4. Create subsystem metadata:
-   - `id`: zero-padded sequential IDs (`01`, `02`, ...)
-   - `name`: slug from path (lowercase, `/` and `_` to `-`, collapse duplicate `-`)
-   - `path`: normalized discovered path
-   - `status`: `pending`
-5. If no subsystems are discovered, report that no source files were found and stop.
-
-### 2.3 Create Manifest
-
-Write the manifest file at `workspace/review-state/manifest.json` using the discovered subsystem list:
-
-```json
-{
-  "version": 1,
-  "started_at": "<ISO timestamp>",
-  "subsystems": [
-    {"id": "01", "name": "<auto-generated-name-1>", "path": "<auto-discovered-path-1>", "status": "pending"},
-    {"id": "02", "name": "<auto-generated-name-2>", "path": "<auto-discovered-path-2>", "status": "pending"}
-  ],
-  "tasks_created": []
-}
-```
-
-Get the current timestamp:
-```bash
-date -u +"%Y-%m-%dT%H:%M:%SZ"
-```
-
-## Step 3: Show Review State And Ask What To Review
-
-Read the manifest and show all available subsystems before doing any review work.
-
-### 3.1 Display Review State
-
-Print a concise table with one row per subsystem:
+Before creating a finding, search existing state and backend artifacts for the
+same fingerprint and these legacy source markers:
 
 ```markdown
-| ID | Name | Path | Status | Started | Completed |
-| --- | --- | --- | --- | --- | --- |
-| <id> | <name> | <path> | <pending|in_progress|done> | <in_progress_at or -> | <completed_at or never> |
+Source: brutal-project-review
+Legacy sources: brutal-project-review, linear-brutal-project-review, gitlear-brutal-project-review
 ```
 
-Also report:
-- Manifest path: `workspace/review-state/manifest.json`
-- Review cycle started: `started_at`
-- Counts by status: pending, in_progress, done
-
-### 3.2 Ask For Review Target
-
-Ask the user which subsystem to review now. Do not proceed until the user answers.
-
-Accepted responses:
-- A subsystem `id`, `name`, or `path`: review only that subsystem.
-- `all`: review every subsystem in manifest order, including previously completed subsystems.
-- `pending`: review every subsystem whose status is `pending` or `in_progress`, in manifest order.
-- `restart`: discard the current manifest and return to Step 2 for fresh subsystem discovery.
-- `cancel`: stop without changing review state.
-
-If the user chooses a subsystem that is already `done`, re-review it by setting it back to `in_progress`.
-
-### 3.3 Mark Selected Subsystem(s) In Progress
-
-For each subsystem selected for review:
-1. Set subsystem status to `"in_progress"` before gathering context.
-2. Add or update `"in_progress_at": "<ISO timestamp>"`.
-3. Preserve any existing `"completed_at"` until Step 9 replaces it after the new review finishes.
-
-For `all` or `pending`, run Steps 4 through 11 for each selected subsystem in deterministic manifest order before reporting final completion.
-
-## Step 4: Gather Subsystem Context
-
-For the selected subsystem:
-
-1. **List all files in the subsystem path**:
-   - Use Glob to find all source files (`.rs`, `.ts`, `.tsx`, `.js`, `.jsx`, `.css`, `.json`)
-   - For each file, use Read to get the full content
-
-2. **Build a CONTEXT BLOCK** containing:
-   - Subsystem name and path
-   - List of all files with their full content
-   - Any relevant patterns from CLAUDE.md that apply to this subsystem
-
-3. **Write the CONTEXT BLOCK** to `workspace/review-state/context-<subsystem-id>.md`
-
-## Step 5: Conduct Multi-Perspective Review
-
-Launch 5 parallel subagents using the Task tool to review the subsystem from different perspectives. Each subagent should read the context file as their first action.
-
-**CRITICAL**: Subagents do NOT inherit your context. Instruct each to read `workspace/review-state/context-<subsystem-id>.md` first.
-
-Launch all five subagents in parallel (single message with multiple Task tool calls).
-
-Each subagent should use `model: opus` and follow this template:
-
-```
-You are an elite code reviewer with decades of experience in systems programming, database internals, and distributed systems. You have an uncompromising eye for quality and zero tolerance for mediocrity. Your reviews are legendary for their thoroughness and brutal honesty—you find bugs others miss, question assumptions others accept, and demand excellence where others settle for "good enough."
-
-Your mission is to perform ruthless, in-depth code reviews. You do not soften feedback. You do not add unnecessary praise. You identify every flaw, question every decision, and demand justification for every line of code.
-
-You are reviewing subsystem "<SUBSYSTEM_NAME>".
-
-## Your Perspective
-[PERSPECTIVE-SPECIFIC INSTRUCTIONS - see below]
-
-## Context
-**FIRST ACTION**: Use the Read tool to read `workspace/review-state/context-<SUBSYSTEM_ID>.md`. This contains all source files in this subsystem.
-
-## Your Task
-Review all code from your specific perspective. For each finding:
-- Cite the specific file, line number, and code snippet
-- Explain why it's a problem with technical precision
-- Provide a concrete, actionable fix or alternative
-- Ask pointed questions about unclear decisions
-- Include a confidence score (0-100)
-- Categorize as CRITICAL, MAJOR, MINOR, or NIT
-```
-
-### Perspective 1: Core Logic (use for `[PERSPECTIVE-SPECIFIC INSTRUCTIONS]`)
-This subagent takes the perspective of a genius architect, deeply considering:
-
-**Logic & Correctness**
-- Is the algorithm correct? Prove it or find the bug.
-- Are there off-by-one errors, race conditions, or integer overflow risks?
-- Does the code actually do what it claims?
-
-**Architecture & Design**
-- Does this code belong in this location?
-- Does it introduce coupling that will cause problems later?
-- Is the abstraction level appropriate?
-- Will this be maintainable in 6 months?
-
-### Perspective 2: Reliability & Testing (use for `[PERSPECTIVE-SPECIFIC INSTRUCTIONS]`)
-This subagent takes the perspective of a reliability engineer with a breaker mindset, deeply considering:
-
-**Testing**
-- Are there tests? Are they comprehensive?
-- Do they test edge cases and error paths?
-- Could the tests pass while the code is still broken?
-- Are concurrent scenarios tested if relevant?
-
-**Error Handling & Edge Cases**
-- What happens with null/empty inputs? Boundary values? Maximum sizes?
-- Are errors handled appropriately or silently swallowed?
-- For Rust code: Is there any `unwrap()` in production paths? This is FORBIDDEN.
-- Are panic paths possible? Document them or eliminate them.
-
-**Reliability**
-- How does this code contribute to or diminish the overall reliability of the system?
-- Does it introduce new failure modes or exacerbate existing ones?
-- Are there any potential points of failure that need to be addressed?
-
-### Perspective 3: Clean Campground (use for `[PERSPECTIVE-SPECIFIC INSTRUCTIONS]`)
-This subagent takes the perspective of a yak-shaving, nit-picking stickler for cleanliness and maintainability, deeply considering:
-
-**Code Quality & Style**
-- Is the code readable to someone unfamiliar with it?
-- Are variable names descriptive? Function lengths reasonable?
-- Does it follow the project's established patterns?
-- Is there unnecessary complexity or cleverness?
-- Are there any violations of the project's CLAUDE.md?
-
-**Documentation**
-- Are complex algorithms explained?
-- Are unsafe blocks justified with SAFETY comments?
-- Would a new team member understand this code?
-
-### Perspective 4: Performance & Security (use for `[PERSPECTIVE-SPECIFIC INSTRUCTIONS]`)
-This subagent takes the perspective of a performance engineer and security auditor, deeply considering:
-
-**Performance & Resources**
-- Are there allocations in hot paths? Unnecessary clones?
-- Could this cause memory pressure or unbounded growth?
-- Are there blocking operations in async contexts?
-- Is lock ordering documented? Could deadlocks occur?
-- Should we add metrics for new operations?
-- Are there O(n²) or worse algorithms that could be O(n) or O(n log n)?
-
-**Security**
-- Are there injection vulnerabilities (SQL, command, XSS)?
-- Is sensitive data properly handled?
-- Are authentication/authorization checks correct?
-- Are secrets exposed in logs?
-
-### Perspective 5: Code Reduction & Simplicity (use for `[PERSPECTIVE-SPECIFIC INSTRUCTIONS]`)
-This subagent takes the perspective of a ruthless minimalist who believes less code is better, code that doesn't exist has no bugs, and every line must justify its existence, deeply considering:
-
-**Unnecessary Code**
-- Is there dead code, unused imports, or unreachable branches?
-- Are there wrapper functions that just delegate to another function without adding value?
-- Is there speculative "just in case" code that handles scenarios that cannot occur?
-- Are there commented-out code blocks that should be deleted?
-
-**Over-Engineering**
-- Are there abstractions with only one implementation that add indirection without value?
-- Are there unnecessary indirection layers (e.g., a service that just calls another service)?
-- Are there frameworks, patterns, or design patterns applied where direct code would be simpler and clearer?
-- Are there configuration systems where hardcoded values would suffice?
-
-**Complexity Reduction**
-- Are there verbose patterns that could be replaced with idiomatic equivalents?
-- Is there excessive nesting that could be flattened with early returns or guard clauses?
-- Are there type hierarchies that add complexity without providing value?
-- Could multiple small files be merged without losing clarity?
-- Could small types or interfaces be inlined rather than defined separately?
-
-## Step 6: Synthesize Findings
-
-After collecting findings from all subagents, you must analyze and synthesize the findings to provide a comprehensive report:
-
-1. **Prioritize issues** based on severity
-2. **Identify patterns** across findings
-3. **Holistically combine** related issues into single findings
-4. **Number combined findings** sequentially: `<subsystem-id>-<finding-number>` (e.g., `01-001`) so they can be referred to unambiguously
-5. **Suggest overall improvements** for the subsystem
-6. **Filter out** irrelevant findings and false positives
-7. Report synthesized findings in the same format as original findings:
-   - Specific file, line, snippet
-   - Concise explanation
-   - Actionable fixes
-   - Concrete questions
-   - Updated confidence score and prioritization category
-
-## Step 6.5: Validate Findings Locally
-
-Before writing the subsystem report:
-1. Re-check each synthesized finding against source code for false positives
-2. Scan for missed high-impact issues in the same subsystem
-3. Validate each suggested fix for technical correctness and regression risk
-4. Reassess severity categorization (CRITICAL/MAJOR/MINOR/NIT)
-
-## Step 7: Write Subsystem Report
-
-Write findings to `workspace/review-state/subsystems/<subsystem-name>.md`:
-
-```markdown
-# Review: <Subsystem Name>
-
-**Path**: <subsystem path>
-**Reviewed**: <ISO timestamp>
-**Status**: Complete
-
-## Summary
-- CRITICAL: <count>
-- MAJOR: <count>
-- MINOR: <count>
-- NIT: <count>
-
-## Findings
-
-### [CRITICAL] <finding-id>: <brief description>
-**File**: `<path>:<line>`
-**Confidence**: <0-100>
-
-**Issue**:
-<detailed explanation>
-
-**Code**:
-```<lang>
-<problematic code snippet>
-```
-
-**Fix**:
-<actionable fix>
-
----
-
-### [MAJOR] <finding-id>: <brief description>
-...
-```
-
-## Step 8: Create Tasks for CRITICAL/MAJOR Findings
-
-For each CRITICAL or MAJOR finding, create a task in the workspace.
-
-### 8.1 Determine Next Task Number
-
-Find the highest existing task number:
-```bash
-ls -d workspace/tasks/todo/*/ workspace/tasks/in-progress/*/ workspace/tasks/done/*/ 2>/dev/null | grep -oE '[0-9]{4}' | sort -rn | head -1
-```
-
-If no tasks exist, start at `0001`.
-
-### 8.2 Create Task Directory and Ticket
-
-**Convention**: Every task MUST be a directory containing a `ticket.md` file. Never create bare `.md` files in task folders.
-
-For each CRITICAL/MAJOR finding:
-
-1. Generate a slug from the finding description (lowercase, hyphens, max 40 chars)
-2. Create directory: `workspace/tasks/todo/<NNNN>-<slug>/`
-3. Create `ticket.md` with this format:
-
-```markdown
-<Brief description of the issue>
-
-**Source**: brutal-project-review
-**Subsystem**: <subsystem-name>
-**Severity**: <CRITICAL|MAJOR>
-**Finding ID**: <finding-id>
-**File**: `<path>:<line>`
-
-## Description
-<detailed explanation of the issue>
-
-## Suggested Fix
-<actionable fix from the review>
-
-## Checklist
-- [ ] Investigate the issue
-- [ ] Implement fix
-- [ ] Add/update tests if applicable
-- [ ] Verify fix
-
-## History
-- <YYYY-MM-DD HH:MM> Created from brutal-project-review finding <finding-id>
-```
-
-### 8.3 Update Manifest
-
-Add created task IDs to `tasks_created` array in manifest to avoid duplicates on resume.
-
-### 8.3.5 Local Review of Task Tickets
-
-Before committing, validate all created task tickets locally:
-1. Issue descriptions are accurate, clear, and actionable
-2. Suggested fixes are technically correct and complete
-3. Severity ratings match actual impact
-4. Checklist items are sufficient to verify the fix
-
-### 8.4 Commit Created Tasks
-
-Commit the new tasks and manifest changes:
-
-```bash
-git add workspace/tasks/todo/*/ticket.md workspace/review-state/manifest.json
-git commit -m "chore: add review tasks from subsystem <subsystem-id> (<subsystem-name>) review"
-```
-
-This ensures tasks are persisted immediately and won't be lost if the session ends.
-
-## Step 9: Mark Subsystem Complete
-
-Update the manifest:
-1. Set subsystem status to `"done"`
-2. Add `"completed_at": "<ISO timestamp>"` to the subsystem entry
-
-## Step 10: Report Progress
-
-Calculate and report:
-- How many subsystems reviewed vs total
-- How many findings by severity for this subsystem
-- How many tasks created
-- Remaining subsystem counts by status
-- Next steps based on the selected mode
-
-Example output:
-```
-## Subsystem Review Complete: <subsystem-name> (<reviewed>/<total>)
-
-**Findings**: <critical> CRITICAL, <major> MAJOR, <minor> MINOR, <nit> NIT
-**Tasks Created**: <count> (workspace/tasks/todo/<task-id>-*, ...)
-**Remaining**: <pending> pending, <in_progress> in_progress, <done> done
-
-Run `/brutal-project-review` again to choose another subsystem, `pending`, or `all`.
-```
-
-## Step 11: Cleanup Context File
-
-Delete the temporary context file to save space:
-```bash
-rm workspace/review-state/context-<subsystem-id>.md
-```
-
----
-
-# Severity Categories
-
-**CRITICAL** - Must fix before merge. Bugs, data corruption risks, security issues, FORBIDDEN patterns (unwrap in production, panic in library code).
-
-**MAJOR** - Should fix. Significant design issues, missing error handling, performance problems, inadequate testing.
-
-**MINOR** - Recommended fixes. Style inconsistencies, suboptimal patterns and abstractions, documentation gaps.
-
-**NIT** - Optional improvements. Minor style preferences, potential micro-optimizations.
-
----
-
-# Mindset
-
-You are not here to make friends. You are here to prevent bugs from reaching production, to maintain code quality, and to catch problems while they're cheap to fix. Every issue you miss is a bug that will wake someone up at 3 AM.
-
-Be direct. Be specific. Be relentless. The code must earn its place in the codebase.
-
-Do not:
-- Add empty praise ("Great job overall!")
-- Soften criticism ("Maybe consider...")
-- Ignore small issues (they accumulate)
-- Assume the author knew better
-
-Do:
-- Question everything
-- Demand evidence and justification
-- Provide concrete alternatives
-- Hold the code to the highest standard
+Persist by backend:
+
+- `local`: create/update `workspace/tasks/todo/<NNNN>-<slug>/ticket.md` and
+  append to the local manifest.
+- `linear`: create/update `type:review-finding` Linear issues in the resolved
+  project and configured intake state; add progress comments to the parent
+  issue.
+- `gitlear`: create/update `type:review-finding` Gitlear issues in `todo`; read
+  raw Markdown when body, comments, status, or project membership matter.
+
+Finding bodies must include severity, subsystem, file/line, fingerprint,
+confidence, issue explanation, suggested fix, acceptance criteria, implementation
+notes, dependencies, and verification commands.
+
+## Final Response
+
+Lead with findings by severity. Include backend, created/updated finding refs,
+manifest path, parent ref, reviewed subsystem count, remaining subsystem count,
+and recommend `$task-worker` for fixes.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Agent"
+  short_description: "Review and fix loop orchestrator"
+  default_prompt: "Use $brutal-agent to review subsystems, drain findings, and repeat until no major findings remain."

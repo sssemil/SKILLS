@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Plan"
+  short_description: "Backend-aware rigorous planning"
+  default_prompt: "Use $brutal-plan to plan this work into the configured BRUTAL.md backend."

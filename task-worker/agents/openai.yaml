@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Worker"
+  short_description: "Backend-aware autonomous worker"
+  default_prompt: "Use $task-worker to pick up and implement the next task from the configured BRUTAL.md backend."

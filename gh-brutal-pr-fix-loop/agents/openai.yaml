@@ -1,0 +1,4 @@
+interface:
+  display_name: "GH Fix Loop"
+  short_description: "Loop PR review and finding fixes"
+  default_prompt: "Use $gh-brutal-pr-fix-loop to review the current PR, fix generated findings, and repeat up to three passes."

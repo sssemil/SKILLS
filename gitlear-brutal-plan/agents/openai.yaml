@@ -1,4 +1,0 @@
-interface:
-  display_name: "Gitlear Brutal Plan"
-  short_description: "Brutal planning persisted to Gitlear"
-  default_prompt: "Use $gitlear-brutal-plan to plan work into Gitlear docs and issues."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Gitlear Brutal Project Review"
-  short_description: "Subsystem review findings in Gitlear"
-  default_prompt: "Use $gitlear-brutal-project-review to review this project and create Gitlear finding issues."
