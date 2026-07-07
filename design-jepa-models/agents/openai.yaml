@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design JEPA Models"
+  short_description: "Design and evaluate JEPA models"
+  default_prompt: "Use $design-jepa-models to design a JEPA model for a new dataset."
