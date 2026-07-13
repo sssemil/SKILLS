@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Grill"
+  short_description: "Resolve planning decisions one at a time"
+  default_prompt: "Use $brutal-grill to resolve the open decisions in this work one at a time."

@@ -1,85 +1,82 @@
 ---
 name: brutal-plan
-description: "Collaborative, multi-perspective feature planning with rigorous requirements interrogation. Creates implementation plans and tasks using the repo's BRUTAL.md backend: local workspace files, Linear, or Gitlear."
+description: Orchestrate repo-grounded grilling, specification review, tracer-bullet ticket design, and backend publication. Use when planning a feature, refactor, migration, or system change into a decision-complete parent plan and executable tasks in the repo's BRUTAL.md backend.
 ---
 
 # Brutal Plan
 
-Plan work until it is decision-complete, then persist the plan and executable
+Drive planning through explicit stage gates, then publish the approved plan and
 tasks through the backend configured in `BRUTAL.md`.
 
 ## Required Context
 
-1. Read `../brutal-shared/backend-resolver.md`.
-2. Resolve the backend before creating artifacts.
-3. Read repo rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and any workflow
-   docs they reference. `BRUTAL.md` controls persistence; repo instruction files
-   control engineering conventions.
-4. If `BRUTAL.md` is missing or incomplete, follow the setup flow in the
-   resolver. Do not create plan artifacts until the backend is resolved.
+1. Read `../brutal-shared/backend-resolver.md` and resolve the backend.
+2. Read `../brutal-grill/SKILL.md`, `../brutal-spec/SKILL.md`, and
+   `../brutal-tickets/SKILL.md`.
+3. Read repository rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and their
+   referenced workflow documents.
+4. If a completed investigation map is supplied, read its decisions and assets
+   and retain a link to it in the specification.
 
-## Planning Workflow
+## Choose The Route
 
-1. Understand the user's request: explicit ask, underlying problem, affected
-   users/systems, constraints, and ambiguities.
-2. Inspect the repo before asking questions. Use `rg`/`rg --files` to find
-   affected modules, prior art, schemas, migrations, APIs, tests, and callers.
-3. Ask focused questions until requirements are decision-complete. Cover exact
-   behavior, scope boundaries, edge cases, rollout, security, observability,
-   acceptance criteria, verification commands, anti-goals, and 1-3 invariants.
-4. Confirm requirements before launching plan-review subagents or writing
-   artifacts. Include confirmed requirements, in/out of scope, anti-goals,
-   non-negotiables, assumptions, and open questions.
-5. Build an ephemeral context file under `/tmp/brutal-plan-<slug>.md` with the
-   confirmed requirements and repo context.
-6. Launch parallel plan reviewers when available:
-   - architecture and system design
-   - data model and migration safety
-   - API, UX, and integration behavior
-   - reliability, security, and observability
-7. Categorize findings as `PLAN BLOCKER`, `IMPLEMENTATION NOTE`, or
-   `SUGGESTION`. Validate them against the repo and resolve all blockers.
+Use the normal route when material requirements and design decisions can be
+resolved in the current planning conversation. Read
+`../brutal-wayfinder/SKILL.md` and offer that route when a necessary decision
+depends on separate research, a prototype, unavailable access, or more than one
+planning session. Explain the reason and confirm the route before persisting an
+investigation map.
 
-## Persist Artifacts
+## Run The Gates
 
-Create one parent plan and child implementation tasks. Use these canonical
-body markers for dedupe and migration from older backend-specific skills:
+1. Apply `brutal-grill` until its requirements brief is decision-complete.
+2. Apply `brutal-spec`, resolve every validated `PLAN BLOCKER`, and obtain
+   explicit approval of the complete specification. This is gate one.
+3. Apply `brutal-tickets` and obtain explicit approval of the complete ticket
+   bodies, acceptance coverage, granularity, and blocker edges. This is gate
+   two.
+4. Publish only after both gates pass. A rejection or unresolved decision leaves
+   all backend artifacts and domain documents unchanged.
+
+## Publish Resumably
+
+Use these markers for normal plan and task dedupe:
 
 ```markdown
 Source: brutal-plan
 Legacy sources: brutal-plan, linear-brutal-plan, gitlear-brutal-plan
 ```
 
-Parent plan body must include:
+Before each write, search by source, parent, and exact title. Create or update
+the parent and approved glossary or ADR changes before exposing implementation
+tasks. Stage complete child bodies in blocker-first order, wire relationships,
+update the parent with final identifiers, then promote the children into the
+intake queue. If publication fails, stop, keep unpromoted work outside intake,
+report every completed and missing write, and resume from that inventory.
 
-- summary
-- key decisions and rationale
-- child task list in execution order
-- plan-level acceptance criteria
-- known risks
-
-Task body must include:
-
-- parent plan reference
-- phase/order
-- description
-- concrete acceptance criteria
-- implementation notes
-- dependencies in body text
-- verification commands
+The parent body contains the approved specification, completed-map reference if
+any, child graph, plan-level acceptance criteria, and known risks. Every child
+body follows the `brutal-tickets` contract and mirrors its parent and blockers
+even when native relationships exist.
 
 Persist by backend:
 
-- `local`: write `workspace/plans/PLAN-<NNNN>-<slug>.md` and
-  `workspace/tasks/todo/<NNNN>-<slug>/ticket.md`.
-- `linear`: create/update a Linear project document, a parent `type:plan`
-  issue, and child `type:task` issues in `Todo` unless explicitly deferred.
-  Use Linear relationships when supported and mirror dependencies in bodies.
-- `gitlear`: create/update a Gitlear project document, a parent `type:plan`
-  issue, and child `type:task` issues in `todo`. Mirror dependencies in bodies;
-  current Gitlear MCP does not expose relationship mutations.
+- `local`: write `<local.root>/plans/PLAN-<NNNN>-<slug>.md`; build children under
+  `<local.root>/tasks/staged/<plan-slug>/`, then move their complete directories
+  to `<local.root>/tasks/todo/` only after every child is ready.
+- `linear`: create/update the project document and parent `type:plan` issue;
+  stage child `type:task` issues in `Backlog`, wire supported parent and blocker
+  links, then promote every child to `Todo`.
+- `gitlear`: create/update the project document and parent `type:plan` issue
+  before creating child `type:task` issues blocker-first in `todo`. Because
+  current Gitlear tools expose neither relationship mutations nor a staging
+  state, every created child must have a complete body and all blockers already
+  present; mirror relationships in bodies.
+
+Remote backends never create local `<local.root>` planning artifacts.
 
 ## Final Response
 
-Report the backend, plan artifact, parent issue/file, child tasks in execution
-order, key decisions, known risks, and the next recommended task.
+Report the backend, parent artifact, tasks in dependency order, applied domain
+documentation changes, key decisions, known risks, partial failures, and the
+next unblocked task.

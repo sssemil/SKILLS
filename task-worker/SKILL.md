@@ -36,7 +36,8 @@ Prefer tasks in this order:
 
 Backend queues:
 
-- `local`: `workspace/tasks/in-progress/*/` then `workspace/tasks/todo/*/`.
+- `local`: `<local.root>/tasks/in-progress/*/` then
+  `<local.root>/tasks/todo/*/`. Never select `<local.root>/tasks/staged/`.
 - `linear`: Linear issues in the resolved project labeled `type:task` or
   `type:review-finding`, preferring `In Progress`, then `Todo`.
 - `gitlear`: raw Markdown issues under

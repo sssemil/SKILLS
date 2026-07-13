@@ -1,11 +1,11 @@
 # Brutal Backend Resolver
 
 All canonical Brutal skills use this resolver before selecting, creating, or
-updating plan/task/review artifacts.
+updating plan, task, investigation, or review artifacts.
 
 ## Configuration
 
-Read `BRUTAL.md` from the target repo root. The required frontmatter is:
+Read `BRUTAL.md` from the target repo root. The canonical frontmatter shape is:
 
 ```yaml
 version: 1
@@ -25,7 +25,13 @@ labels:
   plan: type:plan
   task: type:task
   review_finding: type:review-finding
+  investigation: type:investigation # optional; defaults to this value
 ```
+
+`labels.plan`, `labels.task`, and `labels.review_finding` are required.
+`labels.investigation` is an optional version-1 extension. Its omission does not
+make an existing configuration incomplete; `brutal-wayfinder` defaults it to
+`type:investigation` and offers to add the field before first use.
 
 The Markdown body may contain workflow notes, verification commands, or links to
 repo docs. Treat `BRUTAL.md` as persistence configuration only; still read
@@ -46,11 +52,13 @@ Defaults:
 
 - root: `workspace`
 - plans: `<root>/plans`
-- tasks: `<root>/tasks/{todo,in-progress,done}`
+- tasks: `<root>/tasks/{staged,todo,in-progress,done}`
+- investigations:
+  `<root>/investigations/<NNNN>-<slug>/{map.md,tickets/{todo,in-progress,done}}`
 - review state: `<root>/review-state`
 
-Use local files for all plan, task, and finding persistence. Labels are body
-metadata, not filesystem names.
+Use local files for all plan, task, investigation, and finding persistence.
+Labels are body metadata, not filesystem names.
 
 ## Linear Backend
 
@@ -69,8 +77,9 @@ Resolve:
    project. If multiple or none are discoverable, ask.
 5. Resolve issue statuses for that team. Defaults are `Backlog`, `Todo`,
    `In Progress`, `In Review`, and `Done`.
-6. Verify `BRUTAL.md` uses the canonical labels: `type:plan`, `type:task`, and
-   `type:review-finding`.
+6. Verify `BRUTAL.md` uses the canonical base labels: `type:plan`, `type:task`,
+   and `type:review-finding`. When resolving Wayfinder artifacts, also verify or
+   default `type:investigation`.
 
 Use Linear MCP:
 
@@ -80,8 +89,9 @@ Use Linear MCP:
 - `save_comment`, `list_comments`
 - `list_teams`, `list_issue_statuses`
 
-Remote workflows must not create local `workspace/plans`, `workspace/tasks`, or
-`workspace/review-state`.
+Remote workflows must not create local `<local.root>/plans`,
+`<local.root>/tasks`, `<local.root>/investigations`, or
+`<local.root>/review-state`.
 
 ## Gitlear Backend
 
@@ -113,8 +123,9 @@ Use Gitlear MCP:
   `gitlear_issue_update`, `gitlear_issue_comment`
 - `gitlear_member_list` when resolving assignees
 
-Remote workflows must not create local `workspace/plans`, `workspace/tasks`, or
-`workspace/review-state`.
+Remote workflows must not create local `<local.root>/plans`,
+`<local.root>/tasks`, `<local.root>/investigations`, or
+`<local.root>/review-state`.
 
 ## Shared Labels And Sources
 
@@ -123,6 +134,11 @@ Use exactly these labels:
 - `type:plan`
 - `type:task`
 - `type:review-finding`
+- `type:investigation`
+
+The first three labels are required by the base version-1 configuration.
+`type:investigation` is the canonical optional label used only by
+`brutal-wayfinder` maps and their child questions.
 
 Store source, phase, subsystem, severity, dependencies, fingerprints,
 acceptance criteria, and verification in bodies/comments, not labels.
@@ -130,6 +146,7 @@ acceptance criteria, and verification in bodies/comments, not labels.
 New artifacts use canonical sources:
 
 - `Source: brutal-plan`
+- `Source: brutal-wayfinder`
 - `Source: brutal-project-review`
 - `Source: task-worker`
 - `Source: gh-brutal-pr-review`

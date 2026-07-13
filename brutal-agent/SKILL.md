@@ -18,7 +18,8 @@ Run the backend-aware hardening loop without dropping instructions from
 ## Loop
 
 1. Drain existing resumable work first:
-   - `local`: any `workspace/tasks/in-progress/` or `workspace/tasks/todo/`
+   - `local`: any `<local.root>/tasks/in-progress/` or
+     `<local.root>/tasks/todo/`
    - `linear`: unblocked `In Progress` or `Todo` issues in the resolved project
      labeled `type:task` or `type:review-finding`
    - `gitlear`: unblocked `in-progress` or `todo` issues in the resolved project

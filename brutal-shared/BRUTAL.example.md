@@ -16,6 +16,7 @@ labels:
   plan: type:plan
   task: type:task
   review_finding: type:review-finding
+  investigation: type:investigation
 ---
 
 # Brutal Workflow

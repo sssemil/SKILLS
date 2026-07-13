@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Wayfinder"
+  short_description: "Map and resolve uncertain planning work"
+  default_prompt: "Use $brutal-wayfinder to map and resolve the uncertain decisions in this effort."

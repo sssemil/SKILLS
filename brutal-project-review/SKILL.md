@@ -18,12 +18,12 @@ findings through the configured backend.
 
 ## State Rules
 
-- `local` uses `workspace/review-state/` and local tasks.
+- `local` uses `<local.root>/review-state/` and local tasks.
 - `linear` and `gitlear` use `.brutal-workspace/review-state/` only for local
   resumable review state. Ensure `.brutal-workspace/` is ignored through
   `.git/info/exclude` before writing it.
-- Do not create `workspace/plans`, `workspace/tasks`, or
-  `workspace/review-state` for remote backends.
+- Do not create `<local.root>/plans`, `<local.root>/tasks`, or
+  `<local.root>/review-state` for remote backends.
 - Preserve legacy manifest fields when resuming older runs, but write new
   entries with backend-neutral keys where practical:
   `backend`, `backend_project`, `parent_ref`, `findings_created`.
@@ -65,8 +65,9 @@ Legacy sources: brutal-project-review, linear-brutal-project-review, gitlear-bru
 
 Persist by backend:
 
-- `local`: create/update `workspace/tasks/todo/<NNNN>-<slug>/ticket.md` and
-  append to the local manifest.
+- `local`: create/update
+  `<local.root>/tasks/todo/<NNNN>-<slug>/ticket.md` and append to the local
+  manifest.
 - `linear`: create/update `type:review-finding` Linear issues in the resolved
   project and configured intake state; add progress comments to the parent
   issue.

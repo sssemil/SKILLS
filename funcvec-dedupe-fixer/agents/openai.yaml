@@ -1,0 +1,4 @@
+interface:
+  display_name: "Funcvec Dedupe Fixer"
+  short_description: "Find and fix Rust dupes with funcvec."
+  default_prompt: "Use $funcvec-dedupe-fixer to scan this Rust workspace crate by crate, triage duplicate-function candidates, and implement safe refactors with tests."

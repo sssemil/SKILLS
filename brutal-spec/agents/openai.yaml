@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Spec"
+  short_description: "Synthesize a decision-complete spec"
+  default_prompt: "Use $brutal-spec to synthesize this discussion into a decision-complete specification."
