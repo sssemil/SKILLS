@@ -12,6 +12,125 @@ complete custom adapters can be described in the file. See
 canonical shape. Legacy version-1 backend files and unambiguous prose remain
 supported.
 
+## Brutal workflow map
+
+```text
++====================================================================================+
+|                              BRUTAL.md CONTROL PLANE                               |
+|                                                                                    |
+|  code host: GitHub        work store: local | Linear | Gitlear | Jira              |
+|  workers: tmux (default) | native subagents        rules + verification: repo docs |
++=========================================+==========================================+
+                                          |
+              +---------------------------+---------------------------+
+              |                                                       |
+              v                                                       v
+  +-------------------------+                              +-------------------------+
+  |     IDEA / RESEARCH     |                              |    FEATURE / REFACTOR   |
+  +-------------------------+                              +-------------------------+
+              |                                                           |
+              v                                                           |
+  +-------------------------+                                             |
+  | brutal-idea-eval        |                                             |
+  |                         |                                             |
+  | + brutal-reality        |                                             |
+  | + brutal-deepresearch   |                                             |
+  | + revenue / VC filters  |                                             |
+  +------------+------------+                                             |
+               | verdict / pivot                                          |
+               +---------------------------+-------------------------------+
+                                           |
+                      fog, prototypes,      | decision-ready work
+                      access, research      |
+                              |             |
+                              v             v
+                     +----------------+  +----------------+
+                     | brutal-        |  | brutal-plan    |
+                     | wayfinder      |->| orchestrator   |
+                     +-------+--------+  +-------+--------+
+                             |                   |
+                             | resolved map      v
+                             +----------> [ brutal-grill ]
+                                                 |
+                                                 v
+                                          [ brutal-spec ]
+                                                 |
+                                        HUMAN APPROVAL GATE
+                                                 |
+                                                 v
+                                        [ brutal-tickets ]
+                                                 |
+                                        HUMAN APPROVAL GATE
+                                                 |
+                                                 v
+  EXISTING REPO --------> [ brutal-project-review ] ------+
+     subsystem audit          CRITICAL / MAJOR tasks       |
+                                                           v
+                                             +---------------------------+
+                                             |   WORK STORE TASK GRAPH   |
+                                             +-------------+-------------+
+                                                           |
+                                                           v
+                                             +---------------------------+
+                                             |       brutal-swarm        |
+                                             | dependency waves + bases  |
+                                             +-------------+-------------+
+                                                           |
+                           +-------------------------------+------------------+
+                           |                               |                  |
+                           v                               v                  v
+                  +----------------+              +----------------+  +----------------+
+                  | brutal-worker  |              | brutal-worker  |  | brutal-worker  |
+                  | task A         |              | task B         |  | task N         |
+                  | branch/worktree|              | branch/worktree|  | branch/worktree|
+                  +-------+--------+              +-------+--------+  +-------+--------+
+                          |                               |                   |
+                          +-------------------------------+-------------------+
+                                                          |
+                                                          v
+                                             +---------------------------+
+                                             |      STACKED PR GRAPH     |
+                                             | PR A <- PR B <- PR C      |
+                                             | one PR per exact ticket   |
+                                             +-------------+-------------+
+                                                           |
+                                                           v
+                                             +---------------------------+
+                                             | brutal-inf-fix-loop       |
+                                             | uncapped worker default   |
+                                             +-------------+-------------+
+                                                           |
+                                +--------------------------+-------------------+
+                                |                                              |
+                                v                                              |
+                     +--------------------+                                     |
+                     | brutal-pr-review   |                                     |
+                     +---------+----------+                                     |
+                               | generated findings                             |
+                               v                                                |
+                 +----------------------------+                                 |
+                 | brutal-pr-finding-fixer    |---------------------------------+
+                 +-------------+--------------+          review again
+                               |
+                        fresh clean pass
+                               v
+                         HUMAN MERGE  ------------------------------> task done
+
+  Alternate bounded PR cleanup:
+      open PR --> [ brutal-pr-fix-loop: max 3 passes ] --> review + fixer pair
+
+  Local pre-PR sidecar:
+      git HEAD / jj @- --> [ brutal-review ] --> ruthless local findings
+
+  Standalone research sidecar:
+      research question --> [ brutal-deepresearch ] --> validated report
+                                                   --> idea eval / wayfinder / spec
+```
+
+Arrows show the normal handoff path. Human approval gates prevent planning from
+publishing tasks early, and human merge remains the only path from a clean pull
+request to a completed task.
+
 ## Brutal planning
 
 The planning workflow is a composable, two-gate suite:
