@@ -1,16 +1,15 @@
 ---
-version: 1
-backend: local
+version: 2
+integrations:
+  code_host: github
+  work_store: local
 
-project:
-  name: ""
-  team: ""
+execution:
+  worker_runtime: tmux
 
-gitlear:
-  workspace: ""
-
-local:
-  root: workspace
+providers:
+  local:
+    root: workspace
 
 labels:
   plan: type:plan
@@ -22,3 +21,14 @@ labels:
 # Brutal Workflow
 
 Add project-specific workflow notes, verification commands, and links here.
+
+Loose prose is accepted when it identifies one provider per required role. A
+custom provider must name its role and document the complete contract from
+`brutal-shared/support/contracts.md`.
+
+When `providers.local.root` is relative, linked worker worktrees resolve it
+against the repository's primary worktree so every worker shares one queue.
+
+`execution.worker_runtime` accepts `tmux` or `subagent` and defaults to `tmux`
+when omitted. Use `subagent` to keep workers in the invoking Codex session's
+native collaboration tree instead of launching retained tmux sessions.

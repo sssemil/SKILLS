@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal PR Fix Loop"
+  short_description: "Run a bounded PR review and fix loop"
+  default_prompt: "Use $brutal-pr-fix-loop to review and fix the current pull request for up to three passes."

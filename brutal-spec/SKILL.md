@@ -17,19 +17,17 @@ completed investigation map. Return unresolved material decisions to
 
 ## Draft The Specification
 
-Use this shape, omitting only sections that genuinely do not apply:
+Write only the contract an implementer needs. Reuse the requirements brief by
+reference instead of restating it, combine related material, and omit sections
+that do not change implementation. Use this compact shape:
 
 ```markdown
-## Problem And Outcome
-## Actors And Behavior Scenarios
-## Scope And Anti-Goals
-## Interfaces, Data, And Compatibility
-## Implementation Decisions And Rationale
-## Testing Seams And Verification
-## Migration, Rollout, And Observability
-## Invariants And Acceptance Criteria
-## Risks And Assumptions
-## Proposed Domain Documentation
+## Outcome And Scope
+## Behavior And Boundaries
+## Interfaces, Data, And Migration
+## Implementation Decisions
+## Verification And Acceptance
+## Risks, Assumptions, And Domain Documentation
 ```
 
 State public interface, schema, migration, and wire-format changes precisely.
@@ -56,11 +54,17 @@ from these perspectives:
 
 Classify findings as `PLAN BLOCKER`, `IMPLEMENTATION NOTE`, or `SUGGESTION`.
 Validate each finding against the repository, fold valid notes into the draft,
-and return every blocker to `brutal-grill` one decision at a time.
+and return every simultaneously answerable validated blocker to `brutal-grill`
+in one round. Defer a blocker when another answer can change its necessity,
+wording, or options; never expose an unvalidated finding as a user question.
 
 ## Approval Gate
 
-Present the complete revised specification, including proposed glossary and ADR
-changes, and request explicit approval. The stage completes only when the user
-approves the specification and no `PLAN BLOCKER` or open material decision
-remains. Return the approved specification without persisting it.
+Present outcome, scope, key decisions, material risks, and acceptance criteria
+as the compact approval view. Keep that view to one short paragraph and at most
+seven bullets total; group related decisions, risks, and criteria. Show the
+complete revised specification only when the user asks for it or the
+specification text itself is the requested deliverable. The stage completes
+only when the user approves and no `PLAN BLOCKER` or open material decision
+remains. Return the approved full specification to the calling skill without
+persisting it.

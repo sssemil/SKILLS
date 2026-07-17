@@ -1,6 +1,6 @@
 ---
 name: brutal-grill
-description: Repo-grounded requirements interrogation that resolves one planning decision at a time. Use when a feature, refactor, or system change still has material product or engineering choices, or when another Brutal planning skill needs a decision-complete requirements brief.
+description: Repo-grounded requirements interrogation that resolves related planning decisions in batched rounds. Use when a feature, refactor, or system change still has material product or engineering choices, or when another Brutal planning skill needs a decision-complete requirements brief.
 ---
 
 # Brutal Grill
@@ -19,15 +19,28 @@ repository can supply.
 4. Separate discoverable facts from decisions. Investigate facts; ask only for
    decisions.
 
-## Grill One Decision At A Time
+## Grill In Decision Rounds
 
-Ask exactly one question, wait for the answer, then follow the branch it opens.
-For each question:
+Ask every currently known, relevant, independent question in one round. Two
+questions are independent only when neither answer can change the other's
+necessity, wording, or options. After each response, investigate newly exposed
+branches and batch the questions they make necessary. Ask nothing when
+repository evidence resolves every decision.
 
-- cite the repository evidence or prior answer that makes it necessary
-- offer meaningful options and their tradeoffs
-- recommend one option and explain why
-- use the user-input tool when available
+Use structured user input when it is available, the whole round has at most
+three questions, and each question has 2-3 mutually exclusive options. If the
+tool is unavailable or the round does not fit, use one numbered questionnaire
+and request a compact reply such as `1B 2A 3: custom answer`.
+
+For each decision question:
+
+- give only the minimum repository evidence that makes it necessary
+- offer meaningful options with one-line tradeoffs
+- recommend one option in one line
+
+Give a default or example, not an invented recommendation, for genuinely
+open-ended input. Keep planning questions separate from caller-owned final
+approval, write permission, and safety or model-fallback consent.
 
 Resolve contradictions immediately. Prefer concrete scenarios, payloads, state
 transitions, failure examples, and boundary values over abstract questions.
@@ -42,12 +55,15 @@ Continue until the brief covers:
 - acceptance scenarios and 1-3 invariants
 
 Skip categories that have no bearing on the work. Never turn the list into a
-generic questionnaire.
+generic questionnaire. Resolve low-impact choices from repository precedent and
+record the assumption; ask only when the choice materially changes behavior,
+scope, risk, compatibility, or delivery.
 
 ## Return A Requirements Brief
 
-Return confirmed requirements, scope boundaries, anti-goals, invariants,
-constraints, assumptions, acceptance scenarios, and any unresolved decisions.
+Return a compact brief of confirmed requirements, boundaries, invariants,
+constraints, assumptions, acceptance scenarios, and unresolved decisions.
+Reference evidence instead of repeating the investigation or conversation.
 Mark the brief decision-complete only when every high-impact branch is resolved
 and the repository evidence agrees with it.
 

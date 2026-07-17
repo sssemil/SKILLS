@@ -15,6 +15,24 @@ Agent assumptions (applies to all agents and subagents):
 
 # Brutal Deep Research Process
 
+## User Input Rounds
+
+Before requesting user input, gather every currently known, relevant,
+independent question for the current stage and ask them together. Two questions
+are independent only when neither answer can change the other's necessity,
+wording, or options. Ask dependent questions in the next round.
+
+Use AskUserQuestion when it is available, the whole round has at most three
+questions, and each question has 2-3 mutually exclusive options. If the tool is
+unavailable or the round does not fit, use one numbered message and request a
+compact reply such as `1B 2A 3: custom answer`.
+
+Recommend one answer for each decision question: one option for single-choice
+input or one set for multi-select input. Give a default or example, not an
+invented recommendation, for open-ended fact collection.
+
+---
+
 ## Step 0: Load Context & Session Setup
 
 ### 0.1 Load Project Target Context
@@ -122,22 +140,24 @@ Present:
 - The items list with names, categories, and descriptions
 - The field framework organized by category
 
-Use AskUserQuestion to ask:
-- "Are these items and fields correct? Add/remove anything?"
+Ask in one numbered message:
+1. Whether the items and fields are correct, including any additions or removals
+2. Which supplemental-search freshness filter to use: last 6 months, since
+   2024, since 2025, or unlimited. This filter does not change initial framework
+   membership.
 
-**Hard gate**: Do not proceed until user confirms. User can request additions or removals here.
+**Hard gate**: Do not proceed until the user confirms item 1 and selects item 2.
+Preserve each answered item and re-ask only an omitted item. While applying
+framework revisions, retain item 2, re-present the revised framework, and ask
+only item 1 again unless the user changes the time range.
 
 ---
 
 ## Step 3: Web Search Supplement
 
-### 3.1 Get Time Range
+### 3.1 Use Time Range
 
-Use AskUserQuestion to ask for time range:
-- Last 6 months
-- Since 2024
-- Since 2025
-- Unlimited
+Use the time range captured at Gate 1. Do not ask for it again.
 
 ### 3.2 Launch Web Search Agent
 
@@ -557,9 +577,9 @@ Present a dynamic options list based on actual fields found in the JSON results.
 
 **This is a hard gate. Do not proceed past this step without explicit user confirmation.**
 
-Use AskUserQuestion to ask:
-- Which summary fields to display in the TOC alongside item names?
-- Present the available fields as options
+Present the available fields as a numbered list and ask which field numbers to
+display in the TOC alongside item names. This is a multi-select question, so use
+the numbered-message fallback and include one recommended field set.
 
 **Hard gate**: Do not generate report until user confirms field selection.
 

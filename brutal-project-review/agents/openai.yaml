@@ -1,4 +1,4 @@
 interface:
   display_name: "Brutal Project Review"
-  short_description: "Backend-aware subsystem review"
-  default_prompt: "Use $brutal-project-review to review this project and create finding tasks in the configured backend."
+  short_description: "Work-store-aware subsystem review"
+  default_prompt: "Use $brutal-project-review to review this project and create finding tasks through BRUTAL.md."

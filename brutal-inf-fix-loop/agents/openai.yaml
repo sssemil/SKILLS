@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Infinite Fix Loop"
+  short_description: "Fix PR findings until the review is clean"
+  default_prompt: "Use $brutal-inf-fix-loop to keep reviewing and fixing the current pull request until a review has no findings."

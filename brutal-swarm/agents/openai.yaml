@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Swarm"
+  short_description: "Parallel tmux stacked-PR orchestration"
+  default_prompt: "Use $brutal-swarm to execute a task graph through isolated tmux workers."

@@ -1,4 +1,4 @@
 interface:
   display_name: "Brutal Tickets"
-  short_description: "Design tracer-bullet implementation tickets"
-  default_prompt: "Use $brutal-tickets to break this approved specification into tracer-bullet tickets."
+  short_description: "Design cohesive implementation scopes"
+  default_prompt: "Use $brutal-tickets to split this approved specification into the fewest cohesive implementation scopes."

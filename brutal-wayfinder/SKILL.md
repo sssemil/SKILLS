@@ -11,7 +11,8 @@ implementation.
 
 ## Required Context
 
-1. Read `../brutal-shared/backend-resolver.md` and resolve the backend.
+1. Read `../brutal-shared/integration-resolver.md`, resolve the work store, and
+   load its support module.
 2. Read `../brutal-grill/SKILL.md`.
 3. Read repository instructions, domain context, ADRs, and existing map state.
 4. Use `type:investigation` for every map and investigation ticket. These
@@ -48,20 +49,22 @@ belongs in the later Brutal plan.
 ## Chart A Map
 
 1. Use `brutal-grill` to name and confirm the destination.
-2. Map breadth-first: identify precise questions that can be ticketed now and
+2. Map breadth-first: group questions that must be researched or decided
+   together into one coherent investigation scope. Create separate tickets only
+   for different blockers, modes, owners, or independently useful decisions;
    record the remaining fog without prematurely slicing it.
 3. If no fog remains and the decisions fit the current planning conversation,
    return to `brutal-plan` without creating a map.
-4. Present the destination, initial tickets, blockers, and fog. Publish only
-   after explicit approval.
+4. Present the destination and a one-line list of initial scopes, blockers, and
+   fog. Publish only after explicit approval; show full ticket bodies only when
+   requested.
 5. Create the map first, then child tickets, then native relationships where
    supported. Mirror parent and blocker references in every ticket body.
 
-Persist local maps at
-`<local.root>/investigations/<NNNN>-<slug>/map.md` and tickets under
-`tickets/{todo,in-progress,done}/<NN>-<slug>.md`. For Linear and Gitlear, use a
-parent issue and child issues in the resolved project. Never create local
-investigation files for a remote backend.
+Persist the map and children through the resolved work-store contract. Use the
+local adapter's investigation paths or remote parent/child artifacts, logical
+queue states, and prepare-before-create strategy. Never create local work-store
+artifacts for a remote adapter.
 
 ## Work A Map
 
@@ -76,8 +79,8 @@ investigation files for a remote backend.
 6. Add newly visible questions, graduate sharpened fog into tickets, and move
    newly excluded work to `Out Of Scope`.
 
-Use backend-native assignment, statuses, comments, parents, and blockers when
-available; preserve the same information in bodies when they are not.
+Use adapter assignment, states, comments, parents, and blockers; preserve the
+same information in bodies when the provider has no native representation.
 
 Complete the map only when no open ticket or fog remains. Mark the parent done
 and hand its reference to `brutal-plan`, which consumes the decisions, proposes

@@ -1,6 +1,6 @@
 ---
 name: brutal-tickets
-description: Decompose an approved specification into a dependency graph of decision-complete tracer-bullet implementation tickets. Use when another Brutal planning skill needs executable tasks, or when the user wants an approved plan split into vertical slices without publishing them yet.
+description: Decompose an approved specification into the smallest useful dependency graph of cohesive, decision-complete implementation scopes. Use when another Brutal planning skill needs executable tasks, or when the user wants an approved plan split into implementation tickets without publishing them yet.
 ---
 
 # Brutal Tickets
@@ -8,31 +8,44 @@ description: Decompose an approved specification into a dependency graph of deci
 Design implementation work that a fresh agent can complete one ticket at a
 time. Require an approved, decision-complete specification before starting.
 
-## Draft Tracer Bullets
+## Draft Cohesive Scopes
 
-Prefer narrow vertical slices that cross every necessary layer and leave an
-observable, testable behavior working. Each slice must:
+Make one ticket own one coherent outcome. Keep its schema, API, services,
+callers, UI, migration, cleanup, and tests together when they must be reasoned
+about, landed, or verified together. Ticket count follows the work; it is not a
+planning target.
 
-- fit in one fresh context window
-- be independently demonstrable or verifiable
+Split a scope only when the parts have different hard blockers, ownership,
+rollout boundaries, or independently valuable outcomes. File count, crate or
+layer boundaries, implementation phases, parallelism, and context-window size
+do not justify a split by themselves.
+
+Treat ordinary implementation order inside one outcome as a checklist, not a
+ticket dependency. If neither proposed ticket is useful or complete without the
+other, merge them.
+
+Each ticket must:
+
+- deliver a complete observable or verifiable outcome
 - depend only on work that genuinely blocks it
 - preserve a green integration state when it lands
+- give a fresh agent enough decisions and verification to finish or resume it
 
-Put enabling prefactors first when they make later behavior changes materially
-simpler. Do not create horizontal tickets for all schema, all API, all UI, or
-all tests.
+Use the fewest scopes that satisfy these conditions. Prefer a checklist inside
+one ticket over several tickets that only make sense together.
 
 ### Wide refactors
 
-When one mechanical change has a blast radius that prevents vertical slices,
-use expand-contract:
+Use expand-contract inside one cohesive ticket when one migration owns the
+whole change:
 
 1. expand by adding the new form beside the old
 2. migrate callers in independently green batches sized by blast radius
 3. contract by removing the old form after every migration batch
 
-If migration batches cannot stay green independently, make them share an
-integration branch and block a final integrate-and-verify ticket.
+Create separate expand, migration, or contract tickets only when those phases
+must land or roll out independently. Otherwise keep the sequence and its final
+verification in the same ticket.
 
 ## Define Each Ticket
 
@@ -55,10 +68,11 @@ exact. Express dependencies as ticket titles until backend identifiers exist.
 
 ## Approval Gate
 
-Present a numbered graph in dependency order, then the complete proposed body of
-every ticket. Include a trace showing which tickets cover each specification
-acceptance criterion. Ask the user to approve the full ticket contents,
-granularity, blocking edges, coverage, and any merge or split decisions.
+Present a numbered graph in dependency order with one line per ticket: cohesive
+scope, delivered outcome, and blockers. Keep complete bodies and the acceptance
+coverage trace ready for publication, but show them only when the user asks.
+Ask the user to approve the scope boundaries, granularity, blocking edges,
+coverage, and any merge or split decisions.
 
 Iterate until approved. The stage completes only when every ticket is
 decision-complete, every blocking edge is necessary, and the graph covers every

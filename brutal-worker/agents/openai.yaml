@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Worker"
+  short_description: "One-ticket stacked-PR implementation"
+  default_prompt: "Use $brutal-worker to implement and review one exact BRUTAL.md task."

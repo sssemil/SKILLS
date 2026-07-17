@@ -1,4 +1,0 @@
-interface:
-  display_name: "GH Finding Fixer"
-  short_description: "Fix generated PR review findings"
-  default_prompt: "Use $gh-brutal-pr-finding-fixer to fix generated GitHub PR review findings one at a time."
