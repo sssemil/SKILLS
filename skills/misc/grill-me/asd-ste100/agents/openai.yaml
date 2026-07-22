@@ -1,0 +1,4 @@
+interface:
+  display_name: "ASD-STE100 Technical English"
+  short_description: "Write and audit clear ASD-STE100 technical text"
+  default_prompt: "Use $asd-ste100 to rewrite this technical text and report unresolved safety or terminology questions."

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Writing Great Skills"
+  short_description: "Reference for predictable, effective skill design"
+  default_prompt: "Use $writing-great-skills to review and improve this skill."
+
+policy:
+  allow_implicit_invocation: false

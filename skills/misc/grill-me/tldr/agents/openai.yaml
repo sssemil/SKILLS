@@ -1,0 +1,7 @@
+interface:
+  display_name: "TLDR ADHD Mode"
+  short_description: "Shape responses for clear ADHD-friendly action"
+  default_prompt: "Use $tldr to make the response easier to act on with ADHD."
+
+policy:
+  allow_implicit_invocation: false

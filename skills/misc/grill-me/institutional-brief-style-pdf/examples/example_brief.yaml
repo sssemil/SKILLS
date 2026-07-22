@@ -1,0 +1,2879 @@
+document:
+  title: Institutional Sovereignty in the Age of AI
+  footer_title: Institutional Sovereignty
+  footer_accent: in the Age of AI
+  brand: Palantir
+  draw_brand: true
+pages:
+- type: cover
+  brand: Palantir
+  title_y: 211.9
+  subtitle_w: 310
+  title_lines:
+  - text: Institutional
+    color: text
+    scale_x: 95.17
+    x: 52.12
+  - text: Sovereignty
+    color: text
+    scale_x: 96.84
+    x: 52.12
+  - text: in the
+    color: blue
+    scale_x: 94.29
+    x: 52.12
+  - text: Age of AI
+    color: blue
+    scale_x: 94.26
+    x: 54.74
+  subtitle: '15 steps that every government
+
+    and company can take to compound
+
+    their alpha in the age of AI'
+  brand_y: 64.0
+  brand_size: 19.0
+  subtitle_y: 669.48
+  title_x: 52.12
+  title_size: 87.08
+  title_leading: 78.11
+  subtitle_x: 55.85
+  subtitle_size: 15.87
+  subtitle_leading: 17.74
+  brand_x: 54.7
+- type: pattern
+  page_mark: '02'
+- type: toc
+  sections:
+  - title: Foundations
+    items:
+    - number: I.
+      title: Ensure zero data retention (ZDR).
+    - number: II.
+      title: Determine your AI decision tree.
+    - number: III.
+      title: Identify opportunities in your architecture.
+  - title: Model Layer
+    items:
+    - number: IV.
+      title: Guard against misaligned incentives.
+    - number: V.
+      title: Maximize model liquidity.
+    - number: VI.
+      title: Own the model flywheel.
+  - title: Compute Layer
+    items:
+    - number: VII.
+      title: Decide hardware based on assurance.
+    - number: VIII.
+      title: Own adaptable hardware for sensitive workflows.
+    - number: IX.
+      title: Verify compute you don't own.
+  - title: Control Layer
+    items:
+    - number: X.
+      title: Be model agnostic.
+    - number: XI.
+      title: Implement granular permissions.
+    - number: XII.
+      title: Audit & log.
+    - number: XIII.
+      title: Practice adaptive cybersecurity.
+    - number: XIV.
+      title: Build by branching.
+    - number: XV.
+      title: Own the context flywheel.
+  note_y: 494
+  note: Sovereignty is your alpha. It is your ownership of the value you create and your freedom to pursue new opportunity;
+    a set of economic rights and the ability to expand them. In the age of AI, institutions are being led to believe
+    their choices are narrower than they are - leaving critical decisions about how this technology is being deployed
+    and applied to their data in the hands of others. In reality, you have complete agency over your AI model usage.
+    This is a guide through those decisions.
+- type: section_divider
+  title: Foundations
+  title_scale_x: 103.7
+  title_y: 49.0
+  title_x: 53.98
+- type: step
+  number: I.
+  title: 'Ensure zero
+
+    data retention
+
+    (ZDR).'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'The first step that any institution should take to achieve data sovereignty '
+      x: 237.22
+      baseline_y: 72.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'is to ensure that any LLM usage operates under a Zero Data Retention '
+      x: 237.22
+      baseline_y: 85.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: '(ZDR) agreement. ZDR is a privacy concept whereby none of a '
+      x: 237.22
+      baseline_y: 98.3
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'customer’s data in the form of prompts, outputs and telemetry is retained '
+      x: 237.22
+      baseline_y: 111.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'beyond the ephemeral processing required to generate the request. This '
+      x: 237.22
+      baseline_y: 124.43
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'ensures:'
+      x: 237.22
+      baseline_y: 137.49
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'i) '
+      x: 237.22
+      baseline_y: 163.63
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: Your data is not stored to disk
+      x: 245.18
+      baseline_y: 163.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: ii)
+      x: 237.22
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: ' Your data is not used to train models'
+      x: 245.52
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: iii)
+      x: 237.22
+      baseline_y: 215.9
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: ' Your data cannot be looked at by other humans'
+      x: 247.89
+      baseline_y: 215.9
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: (ii) and (iii) are already nominally true of most enterprise contracts
+      x: 237.22
+      baseline_y: 242.03
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: with model service providers. But the wording of contracts can be
+      x: 237.22
+      baseline_y: 255.1
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'porous. ZDR, by ensuring that your data is never retained, presents '
+      x: 237.22
+      baseline_y: 268.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'structural barriers to illicit use. This is a vast improvement over simply '
+      x: 237.22
+      baseline_y: 281.23
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: trusting that your data will not be wielded against your interests, by
+      x: 237.22
+      baseline_y: 294.3
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'either model providers or third parties. ZDR protects against misuse in '
+      x: 237.22
+      baseline_y: 307.37
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'both the present and the future by model providers, hedging against '
+      x: 237.22
+      baseline_y: 320.43
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'providers altering their enterprise data usage policies to allow more '
+      x: 237.22
+      baseline_y: 333.5
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'training on already-collected data. And it ensures that your data will not '
+      x: 237.22
+      baseline_y: 346.57
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'fall into the hands of other parties. Take litigation risk as one example: '
+      x: 237.22
+      baseline_y: 359.64
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'tellingly, model providers have noted in public non-ZDR contracts that '
+      x: 237.22
+      baseline_y: 372.7
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'they will delete retained data “unless we are legally required to retain '
+      x: 237.22
+      baseline_y: 385.77
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'them.” Discovery during litigation can sweep up to millions of stored '
+      x: 237.22
+      baseline_y: 398.84
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'interactions with models, but that discovery cannot reach data fed to a '
+      x: 237.22
+      baseline_y: 411.9
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: model under a ZDR because that data was never stored.
+      x: 237.22
+      baseline_y: 424.97
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'ZDR is a necessary condition of data sovereignty, but it is not a sufficient '
+      x: 237.22
+      baseline_y: 451.11
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'one. ZDR must be negotiated with model providers. And negotiation '
+      x: 237.22
+      baseline_y: 464.17
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: requires both initial and continued leverage, otherwise providers may
+      x: 237.22
+      baseline_y: 477.24
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'not agree to it. ZDR also operates on a per-provider basis, meaning that it '
+      x: 237.22
+      baseline_y: 490.31
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'must be negotiated with separate model providers. Negotiating multiple '
+      x: 237.22
+      baseline_y: 503.37
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'ZDR agreements is a costly endeavor that incentivizes consolidation '
+      x: 237.22
+      baseline_y: 516.44
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'toward a single model provider. That pull must be resisted. It is important '
+      x: 237.22
+      baseline_y: 529.51
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'today that you use ZDR agreements such that your data never becomes '
+      x: 237.22
+      baseline_y: 542.57
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'a part of the provider’s weights or telemetry. However, you must also '
+      x: 237.22
+      baseline_y: 555.64
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'continuously retain the leverage to ensure that tomorrow model providers '
+      x: 237.22
+      baseline_y: 568.71
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'may not change the rules of the game. A breakthrough in ZDR with one '
+      x: 237.22
+      baseline_y: 581.78
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'model provider should be used as leverage when negotiating with '
+      x: 237.22
+      baseline_y: 594.84
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'another. ZDR may take many forms, and as framed by providers does not '
+      x: 237.22
+      baseline_y: 607.91
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'always offer complete protection. You should zoom in on the following '
+      x: 237.22
+      baseline_y: 620.98
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'technical specifics when negotiating ZDR, to avoid some common '
+      x: 237.22
+      baseline_y: 634.04
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'pitfalls. For example, model providers in some cases may maintain '
+      x: 237.22
+      baseline_y: 647.11
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'monitoring logs that contain customer content and metadata derived '
+      x: 237.22
+      baseline_y: 660.18
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'from customer content, such as safety classifier outputs. ZDR under '
+      x: 237.22
+      baseline_y: 673.24
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'some labs’ public terms only explicitly exclude customer content, but not '
+      x: 237.22
+      baseline_y: 686.31
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'the metadata derived from it, which could present opportunities for '
+      x: 237.22
+      baseline_y: 699.38
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'abuse. Make sure to cover off these common ancillary vectors for '
+      x: 237.22
+      baseline_y: 712.45
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'providers to undermine your data sovereignty. '
+      x: 237.22
+      baseline_y: 725.51
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  paragraph_gap: 0
+- type: step
+  number: I.
+  title: Cont.
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'This includes ensuring that no human has access as a matter of course, '
+      x: 224.43
+      baseline_y: 71.53
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'to any logs maintained by a model provider. '
+      x: 224.43
+      baseline_y: 84.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Extraction-Prone Models (EPM) are those (i) trained by third party firms '
+      x: 224.43
+      baseline_y: 110.73
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'with a structural incentive to replace or compete with your enterprise and '
+      x: 224.43
+      baseline_y: 123.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: '(ii) used without a ZDR agreement. EPMs pose the greatest risks of tribal '
+      x: 224.43
+      baseline_y: 136.86
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'knowledge being extracted from the enterprise, and the greatest risk of '
+      x: 224.43
+      baseline_y: 149.93
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'that knowledge being subsequently wielded against the interests of the '
+      x: 224.43
+      baseline_y: 163.0
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'enterprise. A zero trust posture assumes that all third-party models used '
+      x: 224.43
+      baseline_y: 176.07
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'without a ZDR agreement are EPM. In other words, enterprises should '
+      x: 224.43
+      baseline_y: 189.13
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: assume that any non-ZDR frontier model is extraction-prone.
+      x: 224.43
+      baseline_y: 202.2
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Sovereignty is a series of decisions across the technology stack that you '
+      x: 224.43
+      baseline_y: 664.37
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: make for every workload. These decisions should be made deliberately
+      x: 224.43
+      baseline_y: 677.44
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'in order to maximize capability, cost, and control according to your '
+      x: 224.43
+      baseline_y: 690.51
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: priorities. Below is a general decision tree for that logic, to be tailored to
+      x: 224.43
+      baseline_y: 703.58
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: your unique architecture.
+      x: 224.43
+      baseline_y: 716.64
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: zdr_architecture
+    fig_no: 1
+    caption: ZDR Architecture
+    caption_y: 195.4
+    y: 220.6
+    height: 395.2
+  extra_sections:
+  - number: II.
+    title: 'Determine your
+
+      AI decision tree.'
+    rule_y: 637.0
+    top: 653.8
+    body_y: 655.1
+    body: []
+    paragraph_gap: 0
+  paragraph_gap: 0
+- type: figure_full
+  fig_no: 2
+  caption: AI Decision Tree
+  x: 69.8
+  y: 66.6
+  w: 483.2
+  h: 604.8
+  figure:
+    type: decision_tree
+  figure_y: 88.0
+- type: step
+  number: III.
+  title: 'Identify
+
+    opportunities
+
+    in your
+
+    architecture.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'The first step toward AI model sovereignty, the ability to control how your '
+      x: 224.43
+      baseline_y: 71.53
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'data is used by third-party AI models, is to scrutinize your technology '
+      x: 224.43
+      baseline_y: 84.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'stack for opportunities. Your data can be operationalized by AI models in '
+      x: 224.43
+      baseline_y: 97.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'ways that it never before could, and you can substantially increase your '
+      x: 224.43
+      baseline_y: 110.73
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'alpha if you use it wisely. There are three layers where architecture '
+      x: 224.43
+      baseline_y: 123.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'changes can increase your sovereignty: the model layer, the compute '
+      x: 224.43
+      baseline_y: 136.86
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'layer, and the control layer. '
+      x: 224.43
+      baseline_y: 149.93
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'At the model layer: '
+      x: 340.8
+      baseline_y: 149.93
+      size: 9.3336
+      font: bold
+      color: '#212121'
+    - text: 'You need to know whether '
+      x: 425.14
+      baseline_y: 149.93
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'your architecture is model-agnostic, equipped with granular permissions, '
+      x: 224.43
+      baseline_y: 163.0
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'and positioned to enable value flywheels that you own. Begin with the '
+      x: 224.43
+      baseline_y: 176.07
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'models themselves. Do you have the freedom to move your data across '
+      x: 224.43
+      baseline_y: 189.13
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'providers on your own terms? Do you control where your institution’s '
+      x: 224.43
+      baseline_y: 202.2
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'intelligence ends up, or has it already started leaking into someone else’s '
+      x: 224.43
+      baseline_y: 215.27
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'weights through training on your prompts and outputs? '
+      x: 224.43
+      baseline_y: 228.34
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'At the compute '
+      x: 462.95
+      baseline_y: 228.34
+      size: 9.3336
+      font: bold
+      color: '#212121'
+    - text: 'layer: '
+      x: 224.43
+      baseline_y: 241.4
+      size: 9.3336
+      font: bold
+      color: '#212121'
+    - text: 'Do you have full visibility into the infrastructure running your '
+      x: 250.62
+      baseline_y: 241.4
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'models, down to who can access it and under what conditions? What '
+      x: 224.43
+      baseline_y: 254.47
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'level of assurance do you have in the security of that infrastructure, to '
+      x: 224.43
+      baseline_y: 267.54
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'include technical and contractual commitments? '
+      x: 224.43
+      baseline_y: 280.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'At the control layer: '
+      x: 439.7
+      baseline_y: 280.61
+      size: 9.3336
+      font: bold
+      color: '#212121'
+    - text: 'Review. Are you positioned to capture and secure your tribal knowledge '
+      x: 224.43
+      baseline_y: 293.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'at the moment it is created? Are your most valuable workflows running on '
+      x: 224.43
+      baseline_y: 306.74
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'infrastructure you control? And can you take your institution’s knowhow '
+      x: 224.43
+      baseline_y: 319.81
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: and turn it into a compounding advantage?
+      x: 224.43
+      baseline_y: 332.87
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Every institution should immediately build a team to conduct this '
+      x: 224.43
+      baseline_y: 359.01
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'sovereignty review. If you do not have the resources to do this internally, '
+      x: 224.43
+      baseline_y: 372.07
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Palantir is offering no cost support to all of its partners through outreach '
+      x: 224.43
+      baseline_y: 385.14
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'at: '
+      x: 224.43
+      baseline_y: 398.21
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: sovereign-ai-os@palantir.com.
+      x: 237.45
+      baseline_y: 398.21
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    gap: 0
+  figure:
+    type: architecture_layers
+    fig_no: 3
+    caption: Architecture Layers
+    caption_y: 395.0
+    y: 416.9
+    height: 300.2
+  paragraph_gap: 0
+- type: section_divider
+  title: 'Model
+
+    Layer'
+  title_scale_x: 103.7
+  hatch: top
+  title_y: 49.0
+  title_x: 67.89
+- type: step
+  number: IV.
+  title: 'Beware
+
+    misaligned
+
+    incentives.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'AI model providers have a structural incentive to migrate as much '
+      x: 224.43
+      baseline_y: 71.53
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'intelligence from enterprises into their model weights - the encoded '
+      x: 224.43
+      baseline_y: 84.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'intelligence of these models-as possible. Doing so allows them to lease '
+      x: 224.43
+      baseline_y: 97.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'your insights to competitors, maximize token usage, rent-seek on your '
+      x: 224.43
+      baseline_y: 110.73
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'high-margin workflows, or in the most extreme case: completely replace '
+      x: 224.43
+      baseline_y: 123.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'you. As the financial pressure to grow revenue mounts, model providers '
+      x: 224.43
+      baseline_y: 136.86
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'have already begun directly competing with their enterprise partners. If '
+      x: 224.43
+      baseline_y: 149.93
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'your incentives were aligned with model providers, why do they charge '
+      x: 224.43
+      baseline_y: 163.0
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: per token and not as a proportion of the value they help you create?
+      x: 224.43
+      baseline_y: 176.07
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'The rational posture toward AI model usage in the enterprise is thus one '
+      x: 224.42
+      baseline_y: 202.2
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'of zero-trust - minimizing the ability of increasingly powerful model '
+      x: 224.43
+      baseline_y: 215.27
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: companies to turn your alpha into generally available intelligence.
+      x: 224.43
+      baseline_y: 228.34
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Even if AI model providers do not yet have a plan to commoditize the '
+      x: 224.43
+      baseline_y: 241.4
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'tribal knowledge of your business into the weights of their models, they '
+      x: 224.43
+      baseline_y: 254.47
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'have a growing incentive to do so. Institutions must protect their data and '
+      x: 224.43
+      baseline_y: 267.54
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: maximize their sovereignty through the following practical steps.
+      x: 224.43
+      baseline_y: 280.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: tribal_ownership
+    fig_no: 4
+    caption: Tribal Knowledge Ownership
+    caption_y: 290.0
+    y: 321.0
+    height: 383.0
+  paragraph_gap: 0
+- type: step
+  number: V.
+  title: 'Maximize
+
+    model liquidity.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'To maintain your leverage over model providers, you will require model '
+      x: 237.22
+      baseline_y: 72.15
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'liquidity - that is, the ability to switch to any model with no friction. The '
+      x: 237.22
+      baseline_y: 85.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'past four years have presented a wide array of threats to institutions who '
+      x: 237.22
+      baseline_y: 98.29
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'operate and rely on frontier models: simple outages, changes in data '
+      x: 237.22
+      baseline_y: 111.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'retention policies, fluctuating refusal policies, and geopolitical '
+      x: 237.22
+      baseline_y: 124.42
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'restrictions. Reliance on a single model provider makes any of these '
+      x: 237.22
+      baseline_y: 137.49
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'threats existential. True model liquidity requires:'
+      x: 237.22
+      baseline_y: 150.56
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: i)
+      x: 237.22
+      baseline_y: 176.69
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: ' Access to a wide market of models and model providers. Widespread '
+      x: 243.15
+      baseline_y: 176.69
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: model availability is a world toward which we all should work.
+      x: 237.22
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: ii)
+      x: 237.22
+      baseline_y: 215.89
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: ' Infrastructure (such as AIP Evolve) that lowers barriers for switching '
+      x: 245.52
+      baseline_y: 215.89
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'between different models and providers. Model agnosticism is an '
+      x: 237.22
+      baseline_y: 228.96
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'attribute of your systems that you should work toward developing today. '
+      x: 237.22
+      baseline_y: 242.03
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'That combination protects you from threats to individual model providers '
+      x: 237.22
+      baseline_y: 268.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'but also provides continued leverage against them. If a model provider '
+      x: 237.22
+      baseline_y: 281.23
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'threatens to mishandle your data, you can in turn credibly threaten to '
+      x: 237.22
+      baseline_y: 294.3
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'take your business elsewhere. That provides a structurally favorable '
+      x: 237.22
+      baseline_y: 307.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'power dynamic that can allow your data to be held securely. '
+      x: 237.22
+      baseline_y: 320.43
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'The ability to switch between models quickly allows you to be far more '
+      x: 237.22
+      baseline_y: 346.56
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'intentional about using the best model for the task at hand. Combining '
+      x: 237.22
+      baseline_y: 359.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'this with a comprehensive evaluation suite (such as AIP Evals) enables '
+      x: 237.22
+      baseline_y: 372.7
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'you to optimize performance and minimize for cost and latency. It would '
+      x: 237.22
+      baseline_y: 385.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'be shortsighted to limit your organization to a single lab’s intelligence. The '
+      x: 237.22
+      baseline_y: 398.83
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'broader ecosystem of labs has talent and dynamism to which you should '
+      x: 237.22
+      baseline_y: 411.9
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'be maximally exposed. As different labs and technologies compete for '
+      x: 237.22
+      baseline_y: 424.97
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'dominance in different domains, you want to ensure that you can reap '
+      x: 237.22
+      baseline_y: 438.03
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'the benefits as they present themselves. This could be as simple as a '
+      x: 237.22
+      baseline_y: 451.1
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'new model from a different lab, or it could be completely novel forms of '
+      x: 237.22
+      baseline_y: 464.17
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'intelligence. Language model intelligence has been transformational, but '
+      x: 237.22
+      baseline_y: 477.23
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'is by no means the final form factor of model intelligence. In this spirit, it '
+      x: 237.22
+      baseline_y: 490.3
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'is key that organizations have modular processes that can readily slot in '
+      x: 237.22
+      baseline_y: 503.37
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: and out model intelligences.
+      x: 237.22
+      baseline_y: 516.44
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: agent_harness
+    fig_no: 5
+    caption: Evolve Agent Harness
+    caption_y: 535.2
+    y: 548.0
+    height: 155.0
+  paragraph_gap: 0
+- type: step
+  number: VI.
+  title: 'Own the
+
+    model
+
+    flywheel.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'All institutions are differentiated by their tribal knowledge. Successful '
+      x: 224.43
+      baseline_y: 71.52
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'institutions will not only rely on historically successful knowhow but will '
+      x: 224.43
+      baseline_y: 84.59
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'create compounding feedback loops within their organization such that '
+      x: 224.43
+      baseline_y: 97.66
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'new knowhow is developed. For institutions to retain sovereignty and '
+      x: 224.43
+      baseline_y: 110.73
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'enhance alpha, they - not their model provider - must own this '
+      x: 224.43
+      baseline_y: 123.79
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'knowhow and the feedback loop that it generates. This means protecting '
+      x: 224.43
+      baseline_y: 136.86
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'your intellectual property, allowing you to own and accelerate your '
+      x: 224.43
+      baseline_y: 149.93
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: knowhow flywheel at the model intelligence layer.
+      x: 224.43
+      baseline_y: 163.0
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'A flywheel can be highly potent at the model layer: usage generates '
+      x: 224.43
+      baseline_y: 331.52
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'signal, signal is captured and structured, structured knowhow improves '
+      x: 224.43
+      baseline_y: 344.58
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'the system, and the improved system generates more and better '
+      x: 224.43
+      baseline_y: 357.65
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'knowhow. This loop only compounds, however, if the institution that '
+      x: 224.43
+      baseline_y: 370.72
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'generates the signal is also the one capturing it, with robust sovereignty '
+      x: 224.43
+      baseline_y: 383.79
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'controls (including negotiated ZDR). If that capture occurs in an AI model '
+      x: 224.43
+      baseline_y: 396.85
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'company without robust ZDR protections, you are handing away that '
+      x: 224.43
+      baseline_y: 409.92
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'compounding value to that third party, who can then productize your '
+      x: 224.43
+      baseline_y: 422.99
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: unique insights.
+      x: 224.43
+      baseline_y: 436.05
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'AI model providers may complicate your ability to own the compounding '
+      x: 224.43
+      baseline_y: 462.19
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'loop. Under the public Terms of Service from many frontier model '
+      x: 224.43
+      baseline_y: 475.26
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'providers, you cannot train your own models on any output generated by '
+      x: 224.43
+      baseline_y: 488.33
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'their models because of distillation concerns. As a result, if you continue '
+      x: 224.43
+      baseline_y: 501.39
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'to rely wholly on proprietary models, you may not have the ability or right '
+      x: 224.43
+      baseline_y: 514.46
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'to compound. One remedy to this is using open weight models, which '
+      x: 224.43
+      baseline_y: 527.52
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'offers several benefits:'
+      x: 224.43
+      baseline_y: 540.59
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: i)
+      x: 224.43
+      baseline_y: 566.72
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: ' You can use these models as teacher-models, training your own model '
+      x: 230.36
+      baseline_y: 566.72
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'intelligence on their outputs without the distillation restrictions that '
+      x: 224.43
+      baseline_y: 579.79
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: closed model terms of service impose.
+      x: 224.43
+      baseline_y: 592.86
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: ii)
+      x: 224.43
+      baseline_y: 618.99
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: ' You can update the weights of open models based on your institution’s '
+      x: 232.72
+      baseline_y: 618.99
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'own knowledge, so the compounding loop described above runs on '
+      x: 224.43
+      baseline_y: 632.06
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'infrastructure and weights that you own, rather than on a provider’s '
+      x: 224.43
+      baseline_y: 645.13
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'closed system. iii) You can be shielded from any of the threats that '
+      x: 224.43
+      baseline_y: 658.2
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: accompany frontier model usage, such as policy changes or restrictions.
+      x: 224.43
+      baseline_y: 671.26
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: model_flywheel
+    fig_no: 6
+    caption: Model Flywheel
+    caption_y: 198.6
+    y: 218.7
+    height: 95.0
+  paragraph_gap: 0
+  body_after_y: 390.0
+- type: step
+  number: VI.
+  title: Cont.
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'This solution has tradeoffs. US frontier models are materially more '
+      x: 237.22
+      baseline_y: 72.15
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'capable than open-source models today. That gap is narrowing, but it is '
+      x: 237.22
+      baseline_y: 85.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'unlikely to ever close. There are therefore capability tradeoffs that would '
+      x: 237.22
+      baseline_y: 98.29
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'be made in favor of cost, and more importantly, sovereignty. Many tasks, '
+      x: 237.22
+      baseline_y: 111.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'however, do not require frontier intelligence capabilities, and less capable '
+      x: 237.22
+      baseline_y: 124.42
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'models can be orchestrated to achieve outcomes beyond their class, '
+      x: 237.22
+      baseline_y: 137.49
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'particularly when fine-tuned. All of this relies on having capable open '
+      x: 237.22
+      baseline_y: 150.56
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'weight models. '
+      x: 237.22
+      baseline_y: 163.62
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'We therefore need now more than ever capable American open weight '
+      x: 237.22
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'models. The recently released NVIDIA Nemotron models mark a '
+      x: 237.22
+      baseline_y: 202.82
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: watershed moment in the US open weight ecosystem, though they
+      x: 237.22
+      baseline_y: 215.89
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'are currently the exception rather than the rule. No country is more '
+      x: 237.22
+      baseline_y: 228.96
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: capable of leading open-weight models than the United States.
+      x: 237.22
+      baseline_y: 242.03
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: This is a call to arms.
+      x: 237.22
+      baseline_y: 255.09
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  paragraph_gap: 0
+- type: section_divider
+  title: 'Compute
+
+    Layer'
+  title_scale_x: 103.7
+  hatch: middle
+  title_y: 49.0
+  title_x: 53.98
+- type: step
+  number: VII.
+  title: 'Decide
+
+    hardware
+
+    based on
+
+    assurance.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'Either one of these strategies requires tradeoffs in the current world of '
+      x: 237.22
+      baseline_y: 509.34
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'highly capable closed-weight models, as discussed previously. Yet, there '
+      x: 237.22
+      baseline_y: 522.4
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'are conditions under which such tradeoffs are worthwhile. For one, each '
+      x: 237.22
+      baseline_y: 535.47
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'generation of open-weight models has packed more intelligence into less '
+      x: 237.22
+      baseline_y: 548.54
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'compute - so any investments in compute are likely to become more '
+      x: 237.22
+      baseline_y: 561.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'valuable over time. Such a strategy may also be cost saving in the long '
+      x: 237.22
+      baseline_y: 574.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'term. We have already seen that open source or open-weight models that '
+      x: 237.22
+      baseline_y: 587.74
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'are locally hosted can perform tasks for prices far cheaper than that '
+      x: 237.22
+      baseline_y: 600.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'offered by the closed-weight frontier models. And finally, investments in '
+      x: 237.22
+      baseline_y: 613.87
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'hardware act as insurance against a tumultuous world: the availability'
+      x: 237.22
+      baseline_y: 626.94
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'of high-end chips is already heavily conditioned on geopolitical or '
+      x: 237.22
+      baseline_y: 640.01
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: regulatory contingencies, but so too, it seems, is the availability of
+      x: 237.22
+      baseline_y: 653.07
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: model intelligence via the cloud. Owned hardware insulates you from
+      x: 237.22
+      baseline_y: 666.14
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: all these disruptions.
+      x: 237.22
+      baseline_y: 679.21
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'To ensure that your data is protected, you should make your decisions '
+      x: 237.22
+      baseline_y: 72.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'based on assurance - the underlying mechanism that backs the '
+      x: 237.22
+      baseline_y: 85.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'guarantee that your data won’t be retained or exposed. Assurance can be '
+      x: 237.22
+      baseline_y: 98.29
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: contractual or structural, the latter being stronger.
+      x: 237.22
+      baseline_y: 111.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'At a structural level, you can secure your data by ensuring the physical or '
+      x: 237.22
+      baseline_y: 137.49
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'technical isolation of your compute. That can include self-hosting your '
+      x: 237.22
+      baseline_y: 150.56
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'own models, whether open-weight or in-house, and its infrastructure. To '
+      x: 237.22
+      baseline_y: 163.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'be viable at the mass-commercial level, this requires redundancy and '
+      x: 237.22
+      baseline_y: 176.7
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'security. You can also rent GPUs, avoiding the CapEx of purchasing them '
+      x: 237.22
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: yourself and still enjoying the benefits of self-hosting models.
+      x: 237.22
+      baseline_y: 202.83
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: assurance_levels
+    fig_no: 7
+    caption: Levels of Assurance
+    caption_y: 235.0
+    y: 247.7
+    height: 226.5
+  paragraph_gap: 0
+- type: step
+  number: VIII.
+  title: 'Own adaptable
+
+    hardware for
+
+    sensitive
+
+    workflows.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'Owning your compute is the strongest form of sovereignty, and it is the '
+      x: 224.43
+      baseline_y: 71.53
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'cleanest route to physical assurance. Models are compute-bound, '
+      x: 224.43
+      baseline_y: 84.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'requiring costly, supply-constrained GPUs with high VRAM. These chips '
+      x: 224.43
+      baseline_y: 97.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'can take time to acquire, so if you are concerned with your institution’s AI '
+      x: 224.43
+      baseline_y: 110.73
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'model sovereignty, that ownership may be worth pursuing now. '
+      x: 224.43
+      baseline_y: 123.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Leveraging secure third-party cloud with hosted models protected by '
+      x: 224.43
+      baseline_y: 136.86
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'robust ZDR is also a highly protective form of sovereignty, if your '
+      x: 224.43
+      baseline_y: 149.93
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: organization and your workflows require frontier model performance.
+      x: 224.43
+      baseline_y: 163.0
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Just as the model layer should be model agnostic to retain model liquidity '
+      x: 224.43
+      baseline_y: 189.13
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'and adapt to new forms of intelligence, so too should your hardware be '
+      x: 224.43
+      baseline_y: 202.2
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'adaptable. This is the case for GPUs or other generally programmable '
+      x: 224.43
+      baseline_y: 215.27
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'architectures. Many chips are optimized for today’s architecture - which '
+      x: 224.43
+      baseline_y: 228.34
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'limits you substantially in the case that architecture changes. This has '
+      x: 224.43
+      baseline_y: 241.4
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'played out before as shifts from dense transformer models to reasoning '
+      x: 224.43
+      baseline_y: 254.47
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'models have required substantial architectural changes that a narrower '
+      x: 224.43
+      baseline_y: 267.54
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'chip wouldn''t have survived unmodified. This tendency toward '
+      x: 224.43
+      baseline_y: 280.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'adaptability should be applied across the AI model hardware stack so '
+      x: 224.43
+      baseline_y: 293.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: that you may move as the playing field moves.
+      x: 224.43
+      baseline_y: 306.74
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: on_prem_architecture
+    fig_no: 8
+    caption: On-Prem Architecture
+    caption_y: 314.0
+    y: 335.0
+    height: 380.0
+  paragraph_gap: 0
+- type: step
+  number: IX.
+  title: 'Verify compute
+
+    you don''t own.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'When you must run on compute you do not physically control, such as '
+      x: 237.22
+      baseline_y: 72.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'rented GPUs and cloud compute, you should not rely purely on '
+      x: 237.22
+      baseline_y: 85.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'contractual assurance. Confidential computing allows you to make '
+      x: 237.22
+      baseline_y: 98.3
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'structural assurances even while using someone else’s architecture and '
+      x: 237.22
+      baseline_y: 111.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'hardware. Through hardware attestation-a process whereby the '
+      x: 237.22
+      baseline_y: 124.43
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'hardware generates verifiable proof of execution-you may guarantee '
+      x: 237.22
+      baseline_y: 137.49
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'that your workload ran in a secure environment, out of the purview of the '
+      x: 237.22
+      baseline_y: 150.56
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: third-party host.
+      x: 237.22
+      baseline_y: 163.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'This ladder is how you should reason about every workload. For the '
+      x: 237.22
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'world''s most sensitive work - classified work for governments, and that '
+      x: 237.22
+      baseline_y: 202.83
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'which involves core company secrets - it can often make sense to run on '
+      x: 237.22
+      baseline_y: 215.9
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'hardware you own and isolate. Below that sits attested compute you do '
+      x: 237.22
+      baseline_y: 228.97
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'not own, then cloud models under a ZDR agreement, and finally, for '
+      x: 237.22
+      baseline_y: 242.03
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'public or discrete information that reveals little about your operations, '
+      x: 237.22
+      baseline_y: 255.1
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: there is limited danger in standard third-party usage.
+      x: 237.22
+      baseline_y: 268.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: attestation
+    fig_no: 9
+    caption: Hardware Attestation
+    caption_y: 320.0
+    y: 340.0
+    height: 140.0
+  paragraph_gap: 0
+- type: section_divider
+  title: 'Control
+
+    Layer'
+  title_scale_x: 103.7
+  hatch: bottom
+  title_y: 49.0
+  title_x: 53.98
+- type: figure_full
+  fig_no: 10
+  caption: Control Layer Elements
+  x: 70.8
+  y: 62.3
+  w: 482.0
+  h: 466.2
+  figure:
+    type: control_layer
+  figure_y: 97.6
+- type: step
+  number: X.
+  title: 'Be model
+
+    agnostic.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'As stated in Section 5, model liquidity requires:'
+      x: 224.43
+      baseline_y: 71.53
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: i)
+      x: 224.43
+      baseline_y: 97.67
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: ' access to an array of models'
+      x: 230.35
+      baseline_y: 97.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: ii)
+      x: 224.43
+      baseline_y: 123.8
+      size: 9.3336
+      font: medium
+      color: '#5DACED'
+    - text: ' the ability to switch between them with minimal friction'
+      x: 232.73
+      baseline_y: 123.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'A model agnostic control layer delivers both, configured such that no '
+      x: 224.43
+      baseline_y: 149.94
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'single model is the default, but instead allows the substitution of models '
+      x: 224.43
+      baseline_y: 163.01
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'according to your own preferences or through optimizing according to a '
+      x: 224.43
+      baseline_y: 176.07
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'set of constraints. This is the natural consequence of treating model '
+      x: 224.43
+      baseline_y: 189.14
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: intelligence as modular and distinct from your knowledge layer.
+      x: 224.43
+      baseline_y: 202.2
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'In using a model agnostic system, you are provided with the extra benefit '
+      x: 224.43
+      baseline_y: 228.34
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'of anonymity by aggregation. If your institution accesses models through '
+      x: 224.43
+      baseline_y: 241.41
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'a third-party model-agnostic layer, then many organizations will be hitting '
+      x: 224.43
+      baseline_y: 254.47
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'the same API endpoint. This will make your traffic indistinguishable to '
+      x: 224.43
+      baseline_y: 267.54
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'model providers from other organizations’ at the point of inference, '
+      x: 224.43
+      baseline_y: 280.61
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: providing an extra layer of structural security for your IP.
+      x: 224.43
+      baseline_y: 293.68
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'In a distributed data world, you may have thousands of datasets '
+      x: 224.43
+      baseline_y: 346.01
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'spanning all domains of your institution. Your permissions there are '
+      x: 224.43
+      baseline_y: 359.08
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: defined as data permissions, which should be as granular as a row on
+      x: 224.43
+      baseline_y: 372.15
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: a data table. However, an organization is not structured as a set of
+      x: 224.43
+      baseline_y: 385.21
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'tables and relationships between them, but rather as people, roles, '
+      x: 224.43
+      baseline_y: 398.28
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: relationships, and workflows. Access control architecture that is
+      x: 224.43
+      baseline_y: 411.35
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: defined purely at the data layer must be translated into the structure
+      x: 224.43
+      baseline_y: 424.41
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'of the real world manually and imperfectly, and kept in sync as the '
+      x: 224.43
+      baseline_y: 437.48
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: organization changes.
+      x: 224.43
+      baseline_y: 450.55
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'However, when you model your world as a digital twin, permissions are '
+      x: 224.43
+      baseline_y: 476.68
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'comprehensive and are built to reflect the structure of your organization. '
+      x: 224.43
+      baseline_y: 489.75
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'This includes role-, classification-, and purpose-based access controls '
+      x: 224.43
+      baseline_y: 502.82
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'that dynamically follow the lineage of your data. When certain individuals '
+      x: 224.43
+      baseline_y: 515.88
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'can perform certain actions or see certain data, this should not be '
+      x: 224.43
+      baseline_y: 528.95
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'framed as a data access policy, but rather as a statement about the '
+      x: 224.43
+      baseline_y: 542.02
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'functioning of the organization and the permissions are derived directly '
+      x: 224.43
+      baseline_y: 555.08
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'from this. Granular permissions and access controls can be defined and '
+      x: 224.43
+      baseline_y: 568.15
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'enacted by the people who actually understand the organization, not '
+      x: 224.43
+      baseline_y: 581.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'exclusively by engineers who must continuously translate on a '
+      x: 224.43
+      baseline_y: 594.29
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: case-by-case basis.
+      x: 224.43
+      baseline_y: 607.35
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  extra_sections:
+  - number: XI.
+    title: 'Implement
+
+      granular
+
+      permissions.'
+    rule_y: 319.5
+    top: 335.5
+    body_y: 336.8
+    body: []
+    paragraph_gap: 0
+  paragraph_gap: 0
+- type: step
+  number: XI.
+  title: Cont.
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'This kind of access control is critical in the age of AI. If an agent needs '
+      x: 237.22
+      baseline_y: 72.15
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'access to your data and ontology in order to perform actions, you must '
+      x: 237.22
+      baseline_y: 85.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'be able to enforce precisely what kinds of data it can load, tools it can '
+      x: 237.22
+      baseline_y: 98.29
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'invoke, and actions it can suggest - otherwise it may enjoy far greater '
+      x: 237.22
+      baseline_y: 111.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'access to information than even your employees do. Relying on a model '
+      x: 237.22
+      baseline_y: 124.42
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'provider to respect your permissions without defining them robustly '
+      x: 237.22
+      baseline_y: 137.49
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'means giving an external organization a blank check to review your '
+      x: 237.22
+      baseline_y: 150.56
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'records and trusting they don’t abuse it. That makes your data more '
+      x: 237.22
+      baseline_y: 163.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'vulnerable, and the ambiguity about what is and is not sensitive creates '
+      x: 237.22
+      baseline_y: 176.69
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'further risks of IP theft: a threshold question in many trade secrets suits '
+      x: 237.22
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'is whether your organization’s knowhow was sensitive enough to merit '
+      x: 237.22
+      baseline_y: 202.82
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'internal protections. A digital twin of your organization’s permissions '
+      x: 237.22
+      baseline_y: 215.89
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'removes this uncertainty: the organizational constraints that govern '
+      x: 237.22
+      baseline_y: 228.96
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'human access are already defined within your ontology and can be '
+      x: 237.22
+      baseline_y: 242.03
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: applied in the exact same way to agent access controls.
+      x: 237.22
+      baseline_y: 255.09
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Auditability allows you to detect the misappropriation of your data; '
+      x: 237.22
+      baseline_y: 553.91
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'further, it allows you to operationalize that data for your own purposes. '
+      x: 237.22
+      baseline_y: 566.98
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'There are two approaches to auditability: first, auditability in what you '
+      x: 237.22
+      baseline_y: 580.05
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'send to your models, and second, auditability in what your provider does '
+      x: 237.22
+      baseline_y: 593.11
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: with it.
+      x: 237.22
+      baseline_y: 606.18
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'The first is more in your control. Your full audit system must be able to '
+      x: 237.22
+      baseline_y: 632.32
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'monitor the actions that agents have taken and the data models have '
+      x: 237.22
+      baseline_y: 645.38
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'accessed. A log of this information can allow you to precisely audit the '
+      x: 237.22
+      baseline_y: 658.45
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'interaction of models with your knowledge layer. Testing new models '
+      x: 237.22
+      baseline_y: 671.52
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'from your providers against material that contains answers only you '
+      x: 237.22
+      baseline_y: 684.58
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'could have provided could, if triggered, serve a clear indicator of '
+      x: 237.22
+      baseline_y: 697.65
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: misappropriation.
+      x: 237.22
+      baseline_y: 710.72
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: permissions
+    fig_no: 11
+    caption: Granular Permissions
+    caption_y: 275.0
+    y: 304.4
+    height: 210.0
+  extra_sections:
+  - number: XII.
+    title: Audit & log.
+    rule_y: 524.0
+    top: 542.7
+    body_y: 544.7
+    body: []
+    paragraph_gap: 0
+  paragraph_gap: 0
+- type: step
+  number: XII.
+  title: Cont.
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'There are also strong mechanisms to audit what your model provider '
+      x: 224.43
+      baseline_y: 71.52
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'does with your data. That generally comes in the form of a '
+      x: 224.43
+      baseline_y: 84.59
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'provider-commissioned SOC 2 report, delivered under NDA, which '
+      x: 224.43
+      baseline_y: 97.66
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'attests to security controls and does not say anything about whether and '
+      x: 224.43
+      baseline_y: 110.73
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'how your data may have entered a training pipeline. Model service '
+      x: 224.42
+      baseline_y: 123.79
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'providers will never share how your data is affecting the weights of the '
+      x: 224.43
+      baseline_y: 136.86
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'closed models. There is notional transparency in the form of displaying '
+      x: 224.43
+      baseline_y: 149.93
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'reasoning tokens, but this is more user explainability theater than any '
+      x: 224.43
+      baseline_y: 163.0
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'genuine visibility into why a model reaches its final output. Why would '
+      x: 224.43
+      baseline_y: 176.06
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'you allow your data to be accessed by a frontier AI lab that is more '
+      x: 224.43
+      baseline_y: 189.13
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: focused on protecting their weights than your data?
+      x: 224.43
+      baseline_y: 202.2
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'The defensive approach to auditability is thus admittedly imperfect, and '
+      x: 224.43
+      baseline_y: 228.33
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'is no substitute for sovereignty in other areas. Indeed, if a model provider '
+      x: 224.43
+      baseline_y: 241.4
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'collects information from thousands of customers, no single customer’s '
+      x: 224.43
+      baseline_y: 254.47
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'contributions-including your own-may be detectable. However, without '
+      x: 224.43
+      baseline_y: 267.53
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'robust auditability, there is no way to even begin to causally link how your '
+      x: 224.43
+      baseline_y: 280.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'data may be enhancing the capabilities of frontier models. That causality '
+      x: 224.43
+      baseline_y: 293.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'has legal weight. A data breach or misappropriation suit that you may '
+      x: 224.43
+      baseline_y: 306.73
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'choose to file against a model provider will require that the data that you '
+      x: 224.43
+      baseline_y: 319.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: have fed to the model be auditable.
+      x: 224.43
+      baseline_y: 332.87
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: audit_logs
+    fig_no: 12
+    caption: Audit & Logs
+    caption_y: 358.2
+    y: 389.1
+    height: 282.4
+  paragraph_gap: 0
+- type: step
+  number: XIII.
+  title: 'Practice
+
+    adaptive
+
+    cybersecurity.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'A core pillar of sovereignty is IP protection; one of the most direct ways '
+      x: 237.22
+      baseline_y: 72.15
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'institutions lose IP is through insecure software. The most capable '
+      x: 237.22
+      baseline_y: 85.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'models of today raise the specter of cyber attacks at a speed and scale '
+      x: 237.22
+      baseline_y: 98.29
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'that institutions haven’t had to defend against before. Your cybersecurity '
+      x: 237.22
+      baseline_y: 111.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: must be able to withstand this to protect your data and IP.
+      x: 237.22
+      baseline_y: 124.42
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Model providers are fixated on the integrity of code, but the magnitude of '
+      x: 237.22
+      baseline_y: 150.56
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'emergent cybersecurity threats means that it should not be purely '
+      x: 237.22
+      baseline_y: 163.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'understood as part of the technology layer, but rather from a '
+      x: 237.22
+      baseline_y: 176.69
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'whole-of-organizational standpoint-something providers have little '
+      x: 237.22
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'exposure to; an understaffed dev team is as big a risk as anything else. '
+      x: 237.22
+      baseline_y: 202.82
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'This posture must not be static but withstand continuous testing and '
+      x: 237.22
+      baseline_y: 215.89
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'update itself as new threats emerge through processes such as '
+      x: 237.22
+      baseline_y: 228.96
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: autonomous cybersecurity.
+      x: 237.22
+      baseline_y: 242.03
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Cybersecurity should not be considered purely defensive. Expanded '
+      x: 237.22
+      baseline_y: 268.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'cyber defense gives you the liberty to ship faster and take new ground. '
+      x: 237.22
+      baseline_y: 281.23
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Frontier labs release new products weekly yet simultaneously tell their '
+      x: 237.22
+      baseline_y: 294.3
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'customers to slow down and perform lengthy cyber scans before '
+      x: 237.22
+      baseline_y: 307.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'shipping their own software. This is out of a well-placed concern for '
+      x: 237.22
+      baseline_y: 320.43
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'cybersecurity, but it has a steep opportunity cost, guaranteeing that you '
+      x: 237.22
+      baseline_y: 333.5
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'will slow down and lose ground. That makes it key to build the '
+      x: 237.22
+      baseline_y: 346.56
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'organizational and technical capabilities to give you the freedom to move '
+      x: 237.22
+      baseline_y: 359.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'and gain ground at frontier speed with less risk. The test for any '
+      x: 237.22
+      baseline_y: 372.7
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'organization should be simple: is your rate of shipping software the same '
+      x: 237.22
+      baseline_y: 385.77
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: as it was six months ago? If the answer is yes, something is deeply wrong.
+      x: 237.22
+      baseline_y: 398.83
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: security_forge
+    fig_no: 13
+    caption: Apollo Security Forge
+    caption_y: 455.0
+    y: 456.7
+    height: 194.2
+  paragraph_gap: 0
+- type: step
+  number: XIV.
+  title: 'Build by
+
+    branching.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'Control need not come at the cost of freedom, but rather, done correctly '
+      x: 224.43
+      baseline_y: 71.53
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'it is the mechanism that grants it. This is exactly the case in branching - '
+      x: 224.43
+      baseline_y: 84.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'that is, the ability to fork states, typically of codebases, before pursuing '
+      x: 224.43
+      baseline_y: 97.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'certain actions - which is another feature that should be present in your '
+      x: 224.43
+      baseline_y: 110.73
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: control layer to increase speed and enhance sovereignty.
+      x: 224.43
+      baseline_y: 123.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'Branching is instrumental to control in an agentic world by ensuring that '
+      x: 224.42
+      baseline_y: 149.93
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'any action an agent takes can be reversed. This control equates to '
+      x: 224.43
+      baseline_y: 163.0
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'sovereignty. If agent actions are reversible, agents can be given a far wider '
+      x: 224.43
+      baseline_y: 176.07
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'surface area to act over as the costs of their mistakes are lower. Without '
+      x: 224.43
+      baseline_y: 189.13
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'this reversibility, you are forced to choose between restricting agents from '
+      x: 224.43
+      baseline_y: 202.2
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'touching anything real or accepting unbounded risk. Branching collapses '
+      x: 224.43
+      baseline_y: 215.27
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'this double negative and, in doing so, allows far greater experimentation '
+      x: 224.43
+      baseline_y: 228.34
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'for both humans and agents, because any path can be tried and tested '
+      x: 224.43
+      baseline_y: 241.4
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'before needing to commit to it. '
+      x: 224.43
+      baseline_y: 254.47
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'In the maximally valuable case, branching extends beyond any single '
+      x: 224.43
+      baseline_y: 280.6
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'action to the entire organization itself. Just as a codebase may be '
+      x: 224.43
+      baseline_y: 293.67
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'branched, so too may an organization’s digital twin. Entire workflows or '
+      x: 224.43
+      baseline_y: 306.74
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'architectures may be trialed and compared alongside the status quo to '
+      x: 224.43
+      baseline_y: 319.8
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: determine if they should be adopted before being committed.
+      x: 224.43
+      baseline_y: 332.87
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: branching
+    fig_no: 14
+    caption: Agentic Branching Example
+    caption_y: 365.0
+    y: 374.0
+    height: 320.0
+  paragraph_gap: 0
+- type: step
+  number: XV.
+  title: 'Own the
+
+    context
+
+    flywheel.'
+  body:
+  - type: absolute_lines
+    lines:
+    - text: 'Just as you should own the compounding effects of model improvements '
+      x: 237.22
+      baseline_y: 72.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'made with your data, you should create and own the compounding effect '
+      x: 237.22
+      baseline_y: 85.22
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'of your own institutional knowledge. While the model engineering '
+      x: 237.22
+      baseline_y: 98.3
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'flywheel compounds through improvements to its weights, the context '
+      x: 237.22
+      baseline_y: 111.36
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'engineering flywheel compounds through the structured record of your '
+      x: 237.22
+      baseline_y: 124.43
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: institution’s actions and decisions, captured as an ontology.
+      x: 237.22
+      baseline_y: 137.49
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'The flywheel at the control layer works in a parallel manner to the '
+      x: 237.22
+      baseline_y: 163.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'flywheel at the model layer, whereby usage generates signal, signal is '
+      x: 237.22
+      baseline_y: 176.7
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'captured and structured, structured knowhow improves the system, and '
+      x: 237.22
+      baseline_y: 189.76
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'the improved system generates more and better usage. Here, however, '
+      x: 237.22
+      baseline_y: 202.83
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'the signal is not from model inference, but rather it is derived from your '
+      x: 237.22
+      baseline_y: 215.9
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: organization’s actions, both human and agentic, in your digital twin.
+      x: 237.22
+      baseline_y: 228.97
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'The quality of this flywheel is gated by the quality of the software on '
+      x: 237.22
+      baseline_y: 255.1
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'which your organization operates. Software that meaningfully improves '
+      x: 237.22
+      baseline_y: 268.16
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'someone’s ability to work is used far more, and more of their real '
+      x: 237.22
+      baseline_y: 281.23
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'decisions and actions flow through it. This generates an order of '
+      x: 237.22
+      baseline_y: 294.3
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'magnitude more signal than the same work done across disparate tools, '
+      x: 237.22
+      baseline_y: 307.37
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'leading to compounding institutional knowledge that is captured and '
+      x: 237.22
+      baseline_y: 320.43
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: structured back into your ontology as its generated.
+      x: 237.22
+      baseline_y: 333.5
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: Owning the context engineering flywheel requires ontology primitives
+      x: 237.22
+      baseline_y: 359.63
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'that sit outside the model itself. If your only assets are prompts '
+      x: 237.22
+      baseline_y: 372.7
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'combined with hidden model weights, there is nowhere for this signal to '
+      x: 237.22
+      baseline_y: 385.77
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'persist independent of the model you are using at that moment in time. '
+      x: 237.22
+      baseline_y: 398.84
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: The knowhow is trapped inside this single model relationship rather
+      x: 237.22
+      baseline_y: 411.9
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'than owned by your institution. Instead the ontology knowledge layer, '
+      x: 237.22
+      baseline_y: 424.97
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'which compounds knowhow, must exist independently of the model '
+      x: 237.22
+      baseline_y: 438.04
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'intelligence layer that interacts with this knowhow to produce novel '
+      x: 237.22
+      baseline_y: 451.1
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: actions and insights. This model intelligence layer must be modular
+      x: 237.22
+      baseline_y: 464.17
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'and model agnostic so that you may evolve freely as better models or '
+      x: 237.22
+      baseline_y: 477.24
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: 'better forms of intelligence become available to interact with your '
+      x: 237.22
+      baseline_y: 490.31
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    - text: institutional knowledge.
+      x: 237.22
+      baseline_y: 503.37
+      size: 9.3336
+      font: medium
+      color: '#212121'
+    gap: 0
+  figure:
+    type: context_flywheel
+    fig_no: 15
+    caption: Context Flywheel
+    caption_y: 496.0
+    y: 549.1
+    height: 80.0
+  paragraph_gap: 0
+- type: pattern
+- type: pattern
+- type: back_cover
+  brand_x: 255.0
+  brand_y: 394.0
+  brand_size: 19.0
+  brand: Palantir

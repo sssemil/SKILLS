@@ -1,0 +1,509 @@
+canvas:
+  width: 1080
+  height: 779
+  title: CALENDAR & BOOKING SYSTEM HIGH-LEVEL DESIGN (HLD)
+  title_y: 31
+  title_size: 24
+nodes:
+- id: client
+  kind: box
+  x: 37
+  y: 47
+  w: 236
+  h: 52
+  text: Client (web/mobile)
+  font_size: 18
+- id: api
+  kind: box
+  x: 320
+  y: 47
+  w: 597
+  h: 53
+  text: ''
+  font_size: 18
+- id: event_service
+  kind: box
+  x: 219
+  y: 148
+  w: 189
+  h: 79
+  text: |
+    Event Service
+    (create/edit)
+  font_size: 18
+- id: rsvp_service
+  kind: box
+  x: 430
+  y: 148
+  w: 146
+  h: 79
+  text: |
+    RSVP Service
+  font_size: 18
+- id: availability_service
+  kind: box
+  x: 596
+  y: 148
+  w: 166
+  h: 79
+  text: |
+    Availability
+    Service
+  font_size: 18
+- id: calendar_read_service
+  kind: box
+  x: 783
+  y: 148
+  w: 158
+  h: 79
+  text: |
+    Calendar Read
+    Service
+  font_size: 18
+- id: event_db
+  kind: box
+  x: 209
+  y: 281
+  w: 130
+  h: 107
+  text: |
+    Event DB
+    (Document,
+    SoT)
+  font_size: 18
+- id: rsvp_log
+  kind: box
+  x: 418
+  y: 281
+  w: 158
+  h: 107
+  text: |
+    RSVP Log
+    (Cassandra
+    SoT)
+  font_size: 18
+- id: room_booking_db
+  kind: box
+  x: 627
+  y: 307
+  w: 159
+  h: 113
+  text: |
+    Room Booking
+    DB (Spanner)
+    STRONG · SoT
+  font_size: 17
+- id: redis_zset
+  kind: box
+  x: 817
+  y: 307
+  w: 133
+  h: 187
+  text: |
+    Redis ZSET
+
+    per-user
+    score=start
+    TTL fallbk
+    (rebuild
+    from SoT)
+  font_size: 17
+  align: left
+  text_anchor: start
+  padding: 10
+  line_height: 21
+- id: kafka_bus
+  kind: stream
+  x: 209
+  y: 438
+  w: 595
+  h: 57
+  text: kafka Change Stream (Kafka / CDC)
+  font_size: 19
+- id: search_index
+  kind: box
+  x: 176
+  y: 520
+  w: 78
+  h: 106
+  text: |
+    Search
+    Index
+    (ES)
+  font_size: 17
+- id: reminder_sched
+  kind: box
+  x: 274
+  y: 520
+  w: 101
+  h: 106
+  text: |
+    Reminder
+    Schedlr
+    (buckets)
+  font_size: 16
+- id: sync_change_log
+  kind: box
+  x: 397
+  y: 520
+  w: 79
+  h: 106
+  text: |
+    Sync
+    Change
+    Log
+  font_size: 16
+- id: fanout_worker
+  kind: box
+  x: 499
+  y: 520
+  w: 110
+  h: 106
+  text: |
+    Fan-out
+    Worker
+    (per-att)
+  font_size: 16
+- id: avail_updater
+  kind: green_box
+  variant: green
+  x: 620
+  y: 520
+  w: 145
+  h: 105
+  text: |
+    Avail.
+
+    Updater
+  font_size: 18
+- id: notif_svc
+  kind: box
+  x: 252
+  y: 679
+  w: 112
+  h: 58
+  text: Notif Svc
+  font_size: 18
+  padding: 6
+- id: user_avail
+  kind: box
+  x: 619
+  y: 674
+  w: 198
+  h: 103
+  text: |-
+    User Availab.
+    (Spanner -
+    derived,
+    eventual->SoT)
+  font_size: 16
+edges:
+- from: client.right
+  to: api.left
+  color: blue
+- points:
+  - - 354
+    - 100
+  - - 354
+    - 148
+  color: blue
+- points:
+  - - 518
+    - 100
+  - - 518
+    - 148
+  color: blue
+- points:
+  - - 679
+    - 100
+  - - 679
+    - 148
+  color: blue
+- points:
+  - - 862
+    - 100
+  - - 862
+    - 148
+  color: blue
+- points:
+  - - 309
+    - 227
+  - - 309
+    - 281
+  color: blue
+- points:
+  - - 503
+    - 227
+  - - 503
+    - 281
+  color: blue
+- points:
+  - - 679
+    - 227
+  - - 679
+    - 307
+  color: blue
+- points:
+  - - 862
+    - 227
+  - - 862
+    - 307
+  color: blue
+- points:
+  - - 274
+    - 388
+  - - 274
+    - 438
+  color: blue
+- points:
+  - - 497
+    - 388
+  - - 497
+    - 438
+  color: blue
+- points:
+  - - 235
+    - 495
+  - - 235
+    - 520
+  color: blue
+- points:
+  - - 326
+    - 495
+  - - 326
+    - 520
+  color: blue
+- points:
+  - - 438
+    - 495
+  - - 438
+    - 520
+  color: blue
+- points:
+  - - 554
+    - 495
+  - - 554
+    - 520
+  color: blue
+- points:
+  - - 680
+    - 495
+  - - 680
+    - 520
+  color: blue
+- points:
+  - - 324
+    - 626
+  - - 324
+    - 679
+  color: blue
+- points:
+  - - 252
+    - 708
+  - - 78
+    - 708
+  - - 78
+    - 99
+  color: blue
+- points:
+  - - 436
+    - 626
+  - - 419
+    - 704
+  - - 455
+    - 704
+  color: blue
+- points:
+  - - 692
+    - 625
+  - - 692
+    - 674
+  color: green
+- points:
+  - - 765
+    - 572
+  - - 881
+    - 572
+  - - 881
+    - 494
+  color: green
+- points:
+  - - 974
+    - 737
+  - - 817
+    - 737
+  color: blue
+labels:
+- id: api_label_1
+  text: API Gateway -
+  x: 366
+  y: 82
+  size: 18
+- id: api_label_2
+  text: authN->N,
+  x: 533
+  y: 82
+  size: 18
+- id: api_label_3
+  text: rate-limit,
+  x: 679
+  y: 82
+  size: 18
+- id: api_label_4
+  text: route
+  x: 848
+  y: 82
+  size: 18
+- text: (SYNC)
+  x: 228
+  y: 261
+  size: 18
+- text: (SYNC)
+  x: 438
+  y: 261
+  size: 18
+- text: |
+    (SYNC,
+    STRONG)
+  x: 579
+  y: 261
+  size: 16
+- text: claim
+  x: 701
+  y: 261
+  size: 18
+- text: |
+    GET ?range
+    (1 hop)
+  x: 888
+  y: 260
+  size: 17
+- text: CDC
+  x: 283
+  y: 419
+  size: 17
+- text: CDC
+  x: 493
+  y: 419
+  size: 17
+- text: |
+    GET ?sync_token
+    (delta)
+    per-user
+    change log
+    (Cassandra)
+  x: 435
+  y: 686
+  size: 16
+- text: |
+    fan-out
+    (delta)
+  x: 898
+  y: 526
+  size: 17
+- text: writes
+  x: 691
+  y: 658
+  size: 18
+- text: |
+    Availability
+    Service reads
+    (eventual)
+  x: 837
+  y: 713
+  size: 17
+- text: |
+    push
+    (silent wake)
+  x: 78
+  y: 712
+  size: 17
+icons:
+- name: devices
+  x: 116
+  y: 88
+  scale: 0.94
+- name: key
+  x: 500
+  y: 60
+  scale: 0.72
+- name: clock
+  x: 641
+  y: 59
+  scale: 0.8
+- name: route
+  x: 807
+  y: 59
+  scale: 0.8
+- name: calendar_pen
+  x: 349
+  y: 173
+  scale: 0.83
+- name: clipboard
+  x: 538
+  y: 174
+  scale: 0.86
+- name: calendar_check
+  x: 718
+  y: 174
+  scale: 0.82
+- name: calendar
+  x: 904
+  y: 196
+  scale: 0.82
+- name: search
+  x: 910
+  y: 212
+  scale: 0.75
+- name: map
+  x: 739
+  y: 276
+  scale: 0.92
+- name: db
+  x: 305
+  y: 352
+  scale: 0.86
+- name: db
+  x: 515
+  y: 352
+  scale: 0.86
+- name: redis
+  x: 906
+  y: 299
+  scale: 0.92
+- name: search
+  x: 234
+  y: 589
+  scale: 0.78
+- name: alarm
+  x: 349
+  y: 601
+  scale: 0.72
+- name: doc
+  x: 453
+  y: 600
+  scale: 0.73
+- name: fanout
+  x: 548
+  y: 603
+  scale: 0.72
+- name: updown
+  x: 628
+  y: 544
+  scale: 0.9
+- name: sync
+  x: 738
+  y: 586
+  scale: 0.78
+- name: phone_bell
+  x: 306
+  y: 728
+  scale: 0.7
+- name: db
+  x: 609
+  y: 735
+  scale: 0.75
+- name: chart
+  x: 781
+  y: 665
+  scale: 0.68

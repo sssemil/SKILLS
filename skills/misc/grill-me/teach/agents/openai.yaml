@@ -1,0 +1,7 @@
+interface:
+  display_name: "Teach"
+  short_description: "Teach a skill or concept over multiple sessions"
+  default_prompt: "Use $teach to help me learn a new skill or concept."
+
+policy:
+  allow_implicit_invocation: false
