@@ -1,7 +1,6 @@
 ---
 name: brutal-deepresearch
 description: Structured deep research pipeline with confirmation gates and resume support. Generates outline, launches parallel research agents, produces validated JSON results and markdown report.
-user-invocable: true
 allowed-tools: Bash(ls:*), Bash(date:*), Bash(mkdir:*), Bash(rm:*), Bash(python:*), Bash(sleep:*), Bash(wc:*), Read, Write, Edit, Glob, Grep, WebSearch, Task, AskUserQuestion
 ---
 

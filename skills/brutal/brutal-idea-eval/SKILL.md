@@ -1,7 +1,6 @@
 ---
 name: brutal-idea-eval
 description: "Comprehensive IDEA evaluation combining Reality's Moat scar tissue framework, Revenue Reality Check, VC Power-Law filter, and structured deep research pipeline. Point it at an IDEA.md for end-to-end analysis: defensibility ratio, revenue viability, VC scalability, validated research, and synthesized verdict with pivot recommendations."
-user-invocable: true
 allowed-tools: Bash(ls:*), Bash(date:*), Bash(mkdir:*), Bash(rm:*), Bash(python:*), Bash(sleep:*), Bash(wc:*), Read, Write, Edit, Glob, Grep, WebSearch, Task
 ---
 
