@@ -41,15 +41,6 @@ Read only the supplied phase context file.
 When the prompt contains a managed phase snapshot, do only that phase and
 return the supervisor’s exact result. Do not continue into the next phase.
 
-If the ticket has `## Writable Directory` and BRUTAL.md configures
-`execution.edit_sandbox_command`, use `scoped_edit.py` to launch an editing
-child from a clean worktree in that directory. The child may edit only: it must not commit, push, or
-call providers. After it exits, reject changed paths outside the boundary;
-then the task worker reviews, verifies, commits, pushes, and owns the PR as
-normal. Missing commands, path escapes, or outside changes return `blocked`
-with the worktree preserved. This is a repository write boundary, not a
-confidentiality or network sandbox.
-
 ### `work`
 
 Read the full item, history, parent/blockers, assignment, and existing PR link.

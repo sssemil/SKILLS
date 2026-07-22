@@ -50,30 +50,6 @@ phase, context path, and result path, and must stay below 2 KiB.
 - `fix`: exact finding queue
 - `handoff`: final verification and provider state
 
-## Optional Writable Directory
-
-BRUTAL.md may configure:
-
-```yaml
-execution:
-  edit_sandbox_command:
-    - safe-codex
-```
-
-A ticket may declare one repository-relative directory:
-
-```markdown
-## Writable Directory
-src/api
-```
-
-When both exist, the task worker requires a clean worktree and runs
-`scoped_edit.py`; the child edits from that directory, while the task worker
-retains Git/provider authority and checks every changed path before verifying and committing. `.` allows the
-whole worktree. Missing commands, escapes, or outside changes block and
-preserve the worktree. The wrapper may still allow network and agent config or
-cache writes: this contract restricts repository writes only.
-
 ## Mutable Phase Snapshot
 
 Before every managed phase transition, re-read live provider and Git state and
