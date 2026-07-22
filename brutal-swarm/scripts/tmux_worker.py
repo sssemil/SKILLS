@@ -496,7 +496,6 @@ def _phase_snapshot(
     *,
     live: Mapping[str, Any],
     parent_attempt_id: str | None,
-    parent_checkpoint_digest: str | None,
 ) -> dict[str, Any]:
     handoff = manifest.get("handoff")
     assert isinstance(handoff, Mapping)
@@ -505,7 +504,6 @@ def _phase_snapshot(
         "phase": phase,
         "attempt_id": attempt_id,
         "parent_attempt_id": parent_attempt_id,
-        "parent_checkpoint_digest": parent_checkpoint_digest,
         "identity": {
             "task_ref": manifest["task_ref"],
             "branch": manifest["branch"],
@@ -603,7 +601,6 @@ def _write_attempt(
     phase: str,
     live: Mapping[str, Any],
     parent_attempt_id: str | None,
-    parent_checkpoint_digest: str | None,
     mode: str,
 ) -> tuple[Path, dict[str, Any]]:
     attempt = _attempt_dir(state_dir, attempt_id)
@@ -617,7 +614,6 @@ def _write_attempt(
         attempt_id,
         live=live,
         parent_attempt_id=parent_attempt_id,
-        parent_checkpoint_digest=parent_checkpoint_digest,
     )
     prompt_path = attempt / "prompt.txt"
     version = int(manifest["version"])
@@ -666,7 +662,6 @@ def _write_attempt(
             "phase": phase,
             "mode": mode,
             "parent_attempt_id": parent_attempt_id,
-            "parent_checkpoint_digest": parent_checkpoint_digest,
             "context_sha256": context_sha256,
             "created_at": time.time(),
         },
@@ -1214,7 +1209,6 @@ def launch_worker(
             phase=phase,
             live=_initial_live_snapshot(resolved_handoff),
             parent_attempt_id=None,
-            parent_checkpoint_digest=None,
             mode="fresh",
         )
         _atomic_json(
@@ -1383,11 +1377,6 @@ def inspect_worker(
         "managed": managed,
         "attempt_id": active["attempt_id"] if active else None,
         "phase": active["phase"] if active else None,
-        "checkpoint_digest": (
-            _json_digest(result)
-            if result is not None and result.get("status") == "checkpoint"
-            else None
-        ),
         "context_sha256": (
             attempt_metadata.get("context_sha256") if attempt_metadata else None
         ),
@@ -1490,7 +1479,7 @@ def _attempt_result(
     state_dir: Path,
     manifest: Mapping[str, Any],
     active: Mapping[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any], str]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     attempt = _attempt_dir(state_dir, str(active["attempt_id"]))
     exit_data = _read_json(attempt / "exit.json")
     if exit_data is None or exit_data.get("exit_code") != 0:
@@ -1509,8 +1498,7 @@ def _attempt_result(
         raise TmuxWorkerError(
             "active attempt does not have an advanceable checkpoint"
         )
-    digest = _json_digest(result)
-    return result, exit_data, digest
+    return result, exit_data
 
 
 def _start_managed_attempt(
@@ -1525,7 +1513,6 @@ def _start_managed_attempt(
     phase: str,
     live: Mapping[str, Any],
     parent_attempt_id: str,
-    parent_checkpoint_digest: str | None,
     mode: str,
     thread_id: str | None,
     expected_metadata: Mapping[str, str],
@@ -1540,7 +1527,6 @@ def _start_managed_attempt(
         phase=phase,
         live=live,
         parent_attempt_id=parent_attempt_id,
-        parent_checkpoint_digest=parent_checkpoint_digest,
         mode=mode,
     )
     if resume_instruction:
@@ -1642,7 +1628,6 @@ def advance_worker(
     branch: str,
     phase_snapshot: Mapping[str, Any],
     expected_attempt_id: str,
-    expected_checkpoint_digest: str,
     revalidated: bool,
     repository_identity: str | None = None,
     tmux_socket: str | None = None,
@@ -1686,9 +1671,7 @@ def advance_worker(
             )
             if _pane_state(tmux_executable, tmux_socket, session)["running"]:
                 raise TmuxWorkerError("refusing to advance a running worker pane")
-        result, _, digest = _attempt_result(state_dir, manifest, active)
-        if digest != expected_checkpoint_digest:
-            raise TmuxWorkerError("stale checkpoint digest")
+        result, _ = _attempt_result(state_dir, manifest, active)
         live = _validate_live_snapshot(phase_snapshot, manifest)
         phase = _derived_successor(result)
         attempt_id, snapshot = _start_managed_attempt(
@@ -1702,7 +1685,6 @@ def advance_worker(
             phase=phase,
             live=live,
             parent_attempt_id=expected_attempt_id,
-            parent_checkpoint_digest=digest,
             mode="fresh",
             thread_id=None,
             expected_metadata=expected_metadata,
@@ -1792,7 +1774,6 @@ def _resume_managed_worker(
             phase=str(active["phase"]),
             live=dict(phase_data["live"]),
             parent_attempt_id=str(active["attempt_id"]),
-            parent_checkpoint_digest=None,
             mode="resume",
             thread_id=thread_id,
             expected_metadata=expected_metadata,
@@ -2122,7 +2103,6 @@ def _parser() -> argparse.ArgumentParser:
     _add_identity(advance)
     advance.add_argument("--phase-snapshot", required=True)
     advance.add_argument("--expected-attempt-id", required=True)
-    advance.add_argument("--expected-checkpoint-digest", required=True)
     advance.add_argument("--revalidated", action="store_true")
     advance.add_argument("--codex-bin", default="codex")
     cleanup = subparsers.add_parser("cleanup")
@@ -2273,7 +2253,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 **common,
                 phase_snapshot=_load_data(args.phase_snapshot),
                 expected_attempt_id=args.expected_attempt_id,
-                expected_checkpoint_digest=args.expected_checkpoint_digest,
                 revalidated=args.revalidated,
                 codex_bin=args.codex_bin,
             )

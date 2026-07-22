@@ -12,7 +12,7 @@ run_id: <safe unique token>
 task_ref: <stable provider ref>
 task_kind: task | review_finding
 worker_runtime: tmux | subagent
-phase: work | review | fix | complete  # tmux only; default work
+phase: work | review | fix | complete
 runtime:
   session_name: <tmux session or null>
   state_dir: <absolute tmux state directory or null>
@@ -37,7 +37,7 @@ stacked_on:
   pr: <provider PR ref or null>
 ```
 
-Assignment identity is immutable. The tmux supervisor fills its runtime fields
+Assignment identity is immutable. The runtime adapter fills its runtime fields
 before launch. Runtime data grants no task, Git, or provider authority.
 
 ## Context File
@@ -102,7 +102,7 @@ The immutable handoff says *what is owned*; the phase snapshot says *what is
 true now*. Reject identity mismatches rather than silently adopting new work.
 Review evidence is keyed by the complete base/head snapshot, never head alone.
 
-## Managed Tmux State Machine
+## Managed Worker Protocol
 
 `tmux_worker.py` stores `attempts/000001`, `000002`, … and an atomic
 `active.json`. Each attempt owns its prompt, phase snapshot, result schema,
@@ -127,12 +127,12 @@ After `inspect` reports a zero-exit checkpoint, revalidate live state and call:
 
     tmux_worker.py advance --repo <primary> --handoff <file> \
       --phase-snapshot <file> --expected-attempt-id <id> \
-      --expected-checkpoint-digest <sha256> --revalidated
+      --revalidated
 
-The helper holds an exclusive transition lock, compares active attempt and
-digest, validates the exit/result pair, derives the successor, writes the next
-attempt, atomically changes `active.json`, and respawns the retained pane. A
-replayed controller action fails closed.
+The helper holds an exclusive transition lock, compares the active attempt,
+validates the exit/result pair, derives the successor, writes the next attempt,
+atomically changes `active.json`, and respawns the retained pane. A replayed
+controller action fails closed.
 
 Use `resume` only when an attempt was interrupted before a valid completed
 checkpoint. It creates a new append-only attempt in the same phase and resumes
@@ -141,7 +141,7 @@ thread. Recreating a lost tmux server requires full caller revalidation.
 
 Accept terminal statuses `clean`, `blocked`, `canceled`, `claim_lost`, and
 `failed`. Treat nonzero exit, missing/partial exit, malformed result, wrong
-task/phase/attempt, or stale digest as failure. The controller never accepts a
+task/phase/attempt as failure. The controller never accepts a
 worker-supplied next phase.
 
 ## Native Subagent Runtime

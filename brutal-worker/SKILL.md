@@ -1,6 +1,6 @@
 ---
 name: brutal-worker
-description: Own one exact BRUTAL.md task or review finding through claim, isolated implementation, verification, stacked pull request publication, and an uncapped material-correctness review/fix loop. Managed tmux workers execute one phase per fresh Codex thread.
+description: Own one exact BRUTAL.md task or review finding through claim, isolated implementation, verification, stacked pull request publication, and an uncapped material-correctness review/fix loop. Managed workers execute one phase at a time with fresh context.
 ---
 
 # Brutal Worker
@@ -20,7 +20,7 @@ For standalone work, also read
 worktree with `../brutal-swarm/scripts/worktree_manager.py`, and read
 `../brutal-inf-fix-loop/SKILL.md` plus its source skills.
 
-For managed tmux work, the immutable handoff establishes assignment identity;
+For managed work, the immutable handoff establishes assignment identity;
 the phase snapshot supplies revalidated mutable state. Runtime names, logs, and
 old snapshots are observational and grant no provider authority.
 Validate the context-file checksum and every `{path, sha256}` reference before
@@ -94,10 +94,10 @@ After a matching PR is verified merged, record acceptance, move the item to
 only preassigned phase that replaces the scheduler’s post-merge `finalize`
 action; never use `finalize` as a managed worker phase.
 
-The supervisor alone derives legal phase transitions. A fresh phase uses a new
-Codex thread. Resume the exact recorded thread only when the current attempt was
-interrupted in the same phase. Return `blocked`, `canceled`, `claim_lost`, or
-`failed` with exact recovery state on hard stops.
+The supervisor alone derives legal phase transitions. A fresh phase uses fresh
+execution context. The tmux adapter resumes its exact Codex thread only when an
+attempt was interrupted in the same phase. Return `blocked`, `canceled`,
+`claim_lost`, or `failed` with exact recovery state on hard stops.
 
 ## Standalone Lifecycle
 
