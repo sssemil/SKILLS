@@ -1,94 +1,86 @@
 ---
 name: brutal-pr-review
-description: Review an open pull request with brutal multi-perspective scrutiny, BRUTAL.md integration context, and provider-native generated findings. Use for normal PR review, all-severity fix-loop review passes, or a clean-pass check.
+description: Review an open pull request with Brutal multi-perspective scrutiny, snapshot-safe BRUTAL.md context, and provider-native findings. Supports normal, strict all-findings, and material-convergence passes.
 ---
 
 # Brutal PR Review
 
-Review the current feature branch's open pull request through the code host
-resolved from BRUTAL.md.
+Review the exact open pull request resolved through BRUTAL.md.
 
 ## Required Context
 
-1. Read ../brutal-shared/integration-resolver.md and
-   ../brutal-shared/support/contracts.md.
-2. Reuse a managed worker's validated code host, work store, canonical local
-   root, and exact pull request when supplied. Otherwise resolve one code host
-   and one work store. Read both support modules.
-3. Require an open pull request. Do not create one or fall back to a local-only
-   branch review.
-4. Read AGENTS.md, CLAUDE.md, TARGET.md, README, CI workflows, manifests, and
-   relevant repo docs.
-5. Load references/rust.md when Rust files or Cargo manifests are touched.
+1. Read `../brutal-shared/integration-resolver.md` and
+   `../brutal-shared/support/contracts.md`.
+2. Reuse validated integrations, canonical local root, and exact pull request
+   from a managed phase. Otherwise resolve one code host and one work store and
+   read both support modules.
+3. Require an open pull request. Never create one or substitute a local diff.
+4. Read applicable repository rules and only the docs/manifests needed to
+   interpret the changed surface. Load `references/rust.md` for Rust changes.
 
 ## Hard Rules
 
-- Use provider comments only. Never approve, request changes, or merge.
-- Post live comments by default. Use dry-run only when the user asks for a
-  preview or a safety guard blocks live posting.
-- Stop before posting when the pull-request head changes after context
+- Use provider comments only. Never approve, request changes, merge, or write
+  to forks without explicit permission.
+- Stop before posting if either the base SHA or head SHA changes after context
   collection.
-- Refuse fork/external writes unless the user explicitly allows them.
 - Validate every finding against the current diff and surrounding code.
-- Patch only owned comments beginning with an exact canonical marker.
-- Recognize legacy markers for queue compatibility, but write only version 2
-  markers.
+- Patch only owned comments beginning with an exact canonical marker. Recognize
+  legacy markers for queue compatibility but write only v2 markers.
 
-## Review Records
+## Snapshot And Reviewer Isolation
 
-Generate a unique safe-token review_id for every review invocation. Give each
-finding a deterministic fingerprint and place these markers first in its body:
+Key a review context by provider/repository, pull-request ref, base branch,
+base SHA, head branch, and head SHA. A matching head alone is insufficient: a
+base-only change invalidates the context. Reuse verification only for that exact
+snapshot and only while required checks still pass.
+
+Write minimal content-addressed projections. In managed v3, use the
+decorrelated lenses from
+`../brutal-swarm/references/compositional-harness.md`. Keep raw provider, test,
+and reviewer analysis in adjacent artifacts.
+
+When native reviewer subagents are available, launch them with
+`fork_turns: "none"` and give only one lens-manifest path and digest. They must
+not inherit the worker’s implementation conversation. If subagents are
+unavailable, apply the same evidence isolation sequentially. Merge only
+validated structured findings.
+
+## Review Modes
+
+- `normal`: validate all severities; publish/queue CRITICAL and MAJOR. Report
+  MINOR/NIT only in the summary.
+- `strict_all`: publish/queue all four severities. Clean means zero validated
+  findings.
+- `material_convergence`: validate all four severities. If CRITICAL or MAJOR
+  exists, publish/queue all four. If neither exists, publish no actionable
+  MINOR/NIT comments; include those residuals in the summary and return
+  `materially_clean`. Zero findings returns `zero_findings`.
+
+Every result includes `validated_finding_count`, `material_finding_count`,
+counts by severity and placement, queued count, residual MINOR/NIT findings,
+posting actions, checks, and completion kind when converged.
+
+## Review Records And Posting
+
+Generate a safe unique `review_id`. Give each finding a deterministic
+fingerprint and begin its body with:
 
     <!-- brutal-pr-review:v2:<fingerprint> -->
     <!-- brutal-pr-review-occurrence:<review_id>:<reviewed_head_sha> -->
 
-Use the stable fingerprint to patch an owned same-head finding. Replace its
-occurrence marker on every review so a recurring finding becomes actionable
-again. For every severity enabled in the current mode, post line-mappable
-findings inline and non-line-mappable findings as individual top-level
-pull-request conversation comments. Never hide an enabled finding only inside
-the summary.
+For each enabled severity, post line-mappable findings inline and other
+findings as individual top-level comments. Never hide an enabled actionable
+finding only in the summary.
 
-Normal mode queues CRITICAL and MAJOR. It still reports and counts validated
-MINOR/NIT findings but does not create generated queue records for them.
-Explicit all-findings/fix-loop mode queues CRITICAL, MAJOR, MINOR, and NIT. The
-review result must count every validated finding so a clean pass means zero
-findings of every severity.
+For GitHub, send the final validated set to
+`scripts/post_github_review.py`. Use `inline_severities` for the mode-derived
+actionable severities: CRITICAL/MAJOR for normal or a converged material pass,
+all four for strict mode or a material pass that found CRITICAL/MAJOR. Add
+`--dry-run` only for an explicit preview or safety guard.
 
-## Workflow
+Before posting, re-read base/head SHAs. Return the review id, complete reviewed
+snapshot, finding counts, queue counts, summary action, checks, and blockers.
 
-1. Resolve pull-request metadata, diff, checks, comments, review state, base/head
-   refs, head SHA, active user, and fork state through the code-host adapter.
-2. Resolve linked product context through the work-store adapter. Search branch,
-   title, body, commits, links, and changed files; require exactly one linked
-   item only when the repository workflow requires one.
-3. Write temporary review context under
-   /tmp/brutal-pr-review-<provider>-<id>.md with metadata, diff, checks, product
-   context, repo rules, callers, tests, and verification results.
-4. Launch five reviewers when available:
-   - product/work-store alignment
-   - correctness and architecture
-   - reliability, testing, and error handling
-   - performance, security, and concurrency
-   - simplicity and maintainability
-5. Merge duplicates, discard false positives, validate severities and mappings,
-   and retain discrete inline or top-level findings.
-6. For GitHub, build this helper payload:
-
-    {
-      "repo": "OWNER/REPO",
-      "pr_number": 123,
-      "head_sha": "abc123",
-      "review_id": "r-safe-token",
-      "summary_markdown": "Review summary...",
-      "findings": [],
-      "inline_severities": ["CRITICAL", "MAJOR"]
-    }
-
-   In all-findings mode, include all four severities. Run
-   scripts/post_github_review.py, adding --dry-run only when required.
-7. Return the review id, reviewed head, validated and queued finding counts,
-   counts by severity and placement, posting actions, checks, and safety
-   blockers.
-
-A review is clean only when validated_finding_count is zero.
+Redirect verbose output to temporary logs. Report command status and duration;
+on failure include at most the last 200 lines or 16 KiB, whichever is smaller.

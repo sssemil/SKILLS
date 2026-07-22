@@ -36,20 +36,98 @@ output = Path(args[output_index])
 output.parent.mkdir(parents=True, exist_ok=True)
 with (output.parent / "fake-codex-invocations.jsonl").open("a", encoding="utf-8") as stream:
     stream.write(json.dumps({"args": args, "prompt": prompt}) + "\n")
-print(json.dumps({"type": "thread.started", "thread_id": "thread-exact-123"}), flush=True)
-if "WAIT_FOR_TEST" in prompt:
+attempt_path = output.parent / "attempt.json"
+attempt = json.loads(attempt_path.read_text()) if attempt_path.exists() else None
+control = prompt
+if attempt:
+    control += (output.parent / "phase-snapshot.json").read_text()
+thread_id = f"thread-{attempt['attempt_id']}" if attempt else "thread-exact-123"
+print(json.dumps({"type": "thread.started", "thread_id": thread_id}), flush=True)
+if "WAIT_FOR_TEST" in control:
     time.sleep(1.0)
-status = "blocked" if "RETURN_BLOCKED" in prompt else "clean"
-task_ref = "OTHER-9" if "WRONG_TASK_RESULT" in prompt else "TASK-123"
-if "MALFORMED_RESULT" in prompt:
+status = "blocked" if "RETURN_BLOCKED" in control else "clean"
+task_ref = "OTHER-9" if "WRONG_TASK_RESULT" in control else "TASK-123"
+if "MALFORMED_RESULT" in control:
     output.write_text("not-json", encoding="utf-8")
+elif attempt:
+    snapshot = json.loads((output.parent / "phase-snapshot.json").read_text())
+    live = snapshot["live"]
+    material = attempt["phase"] == "review" and live.get("test_scenario") == "material"
+    checkpoint = {
+        "branch": snapshot["identity"]["branch"],
+        "head_sha": live.get("branch_head") or "head-unknown",
+        "base_branch": live.get("base_branch") or "main",
+        "base_sha": live.get("base_sha") or "base-unknown",
+        "pull_request": "PR-123",
+        "verification_head": live.get("branch_head"),
+        "verification_summary": "fake verification",
+        "review_id": "review-1" if attempt["phase"] == "review" else None,
+        "findings_by_severity": {
+            "CRITICAL": 0,
+            "MAJOR": 1 if material else 0,
+            "MINOR": 0 if material else 1,
+            "NIT": 0,
+        },
+        "queued_finding_count": 1 if material else 0,
+        "unhandled_finding_count": 0,
+        "summary_posted": attempt["phase"] == "review",
+        "residual_findings": [] if material else [{
+            "fingerprint": "minor-1",
+            "severity": "MINOR",
+            "summary": "fake minor",
+            "location": None,
+        }],
+    }
+    common = {
+        "schema_version": 3 if attempt.get("context_digest") else 2,
+        "task_ref": task_ref,
+        "summary": "fake worker result",
+        "phase": attempt["phase"],
+        "attempt_id": attempt["attempt_id"],
+    }
+    if attempt.get("context_digest"):
+        common["context_digest"] = attempt["context_digest"]
+    if "RETURN_CONFLICT" in control and attempt["phase"] in ("work", "fix"):
+        result = {
+            **common,
+            "status": "conflict",
+            "conflict": {
+                "origin_phase": attempt["phase"],
+                "operation": "merge",
+                "base_sha": live.get("base_sha") or "base",
+                "head_sha": live.get("branch_head") or "head",
+                "conflicted_paths": ["src/api.rs"],
+                "conflict_artifact_digest": "a" * 64,
+            },
+        }
+    elif status == "blocked":
+        result = {
+            **common,
+            "status": "blocked",
+            "blocker": "fake blocker",
+        }
+    elif attempt["phase"] in ("handoff", "complete"):
+        result = {
+            **common,
+            "status": "clean",
+            "completion_kind": "merged" if attempt["phase"] == "complete" else "materially_clean",
+            "cleanup_eligible": attempt["phase"] == "complete",
+            "result": checkpoint,
+        }
+    else:
+        result = {
+            **common,
+            "status": "checkpoint",
+            "checkpoint": checkpoint,
+        }
+    output.write_text(json.dumps(result), encoding="utf-8")
 else:
     output.write_text(json.dumps({
         "status": status,
         "task_ref": task_ref,
         "summary": "fake worker result",
     }), encoding="utf-8")
-sys.exit(7 if "PROCESS_FAILURE" in prompt else 0)
+sys.exit(7 if "PROCESS_FAILURE" in control else 0)
 '''
 
 
@@ -115,6 +193,53 @@ class TmuxWorkerTest(unittest.TestCase):
             **self.common(), prompt=prompt, codex_bin=str(self.fake_codex)
         )
 
+    def managed_handoff(self, phase: str = "work") -> dict[str, object]:
+        return {
+            "mode": "managed",
+            "run_id": "run-7",
+            "task_ref": "TASK-123",
+            "task_kind": "task",
+            "worker_runtime": "tmux",
+            "phase": phase,
+            "runtime": {"session_name": None, "state_dir": None},
+            "work_store": {"adapter": "local", "identity": "test"},
+            "code_host": {
+                "adapter": "github",
+                "repository": self.repository_identity,
+            },
+            "worktree_path": str(self.worktree),
+            "branch": self.branch,
+            "branch_head": self.head,
+            "base_branch": "main",
+            "base_sha": self.head,
+            "task_state": "in_progress",
+            "task_owner": "worker-1",
+            "pull_request": None,
+            "checks": None,
+            "stacked_on": {"task_ref": None, "pr": None},
+        }
+
+    def phase_snapshot(self, **live_updates: object) -> dict[str, object]:
+        return {
+            "schema_version": 1,
+            "identity": {
+                "task_ref": "TASK-123",
+                "branch": self.branch,
+                "worktree_path": str(self.worktree),
+                "code_host_repository": self.repository_identity,
+            },
+            "live": {
+                "task_state": "in_progress",
+                "task_owner": "worker-1",
+                "branch_head": self.head,
+                "base_branch": "main",
+                "base_sha": self.head,
+                "pull_request": "PR-123",
+                "checks": {"state": "success"},
+                **live_updates,
+            },
+        }
+
     def inspect(self) -> dict[str, object]:
         return tmux_worker.inspect_worker(**self.common())
 
@@ -122,7 +247,7 @@ class TmuxWorkerTest(unittest.TestCase):
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             inspected = self.inspect()
-            if inspected["pane_dead"]:
+            if inspected["pane_dead"] and inspected["exit"] is not None:
                 return inspected
             time.sleep(0.05)
         self.fail("tmux worker did not exit")
@@ -172,7 +297,7 @@ class TmuxWorkerTest(unittest.TestCase):
         self.assertIn("--output-last-message", args)
         self.assertNotIn("--ephemeral", args)
         self.assertNotIn("--sandbox", args)
-        self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", args)
+        self.assertIn("--dangerously-bypass-approvals-and-sandbox", args)
         self.assertEqual(stat.S_IMODE((state_dir / "prompt.txt").stat().st_mode), 0o600)
 
     def test_live_and_dead_panes_report_running_for_concurrency(self) -> None:
@@ -221,23 +346,8 @@ class TmuxWorkerTest(unittest.TestCase):
         self.assertTrue(first_state["session_exists"])
         self.assertTrue(second_state["session_exists"])
 
-    def test_handoff_is_resolved_copied_and_sent_through_private_prompt(self) -> None:
-        handoff = {
-            "mode": "managed",
-            "run_id": "run-7",
-            "task_ref": "TASK-123",
-            "task_kind": "task",
-            "worker_runtime": "tmux",
-            "runtime": {"session_name": None, "state_dir": None},
-            "work_store": {"adapter": "local", "identity": "test"},
-            "code_host": {"adapter": "github", "repository": self.repository_identity},
-            "worktree_path": str(self.worktree),
-            "branch": self.branch,
-            "branch_head": self.head,
-            "base_branch": "main",
-            "base_sha": self.head,
-            "stacked_on": {"task_ref": None, "pr": None},
-        }
+    def test_handoff_is_resolved_into_artifacts_and_small_private_prompt(self) -> None:
+        handoff = self.managed_handoff()
         original = json.loads(json.dumps(handoff))
         launched = tmux_worker.launch_worker(
             **self.common(),
@@ -252,8 +362,372 @@ class TmuxWorkerTest(unittest.TestCase):
         resolved = manifest["handoff"]
         self.assertEqual(resolved["runtime"]["session_name"], launched["session_name"])
         self.assertEqual(resolved["runtime"]["state_dir"], launched["state_dir"])
-        self.assertIn('"task_ref": "TASK-123"', (state_dir / "prompt.txt").read_text())
-        self.assertEqual(inspected["result"]["status"], "clean")
+        attempt_dir = state_dir / "attempts" / "000001"
+        prompt = (attempt_dir / "prompt.txt").read_text()
+        self.assertNotIn('"task_ref": "TASK-123"', prompt)
+        self.assertNotIn('"immutable_assignment"', prompt)
+        self.assertLessEqual(len(prompt.encode()), 2 * 1024)
+        self.assertIn("context_digest=", prompt)
+        context_manifest = json.loads(
+            (attempt_dir / "context-manifest.json").read_text()
+        )
+        self.assertEqual(context_manifest["schema_version"], 3)
+        self.assertEqual(
+            set(context_manifest["task_capsule"]),
+            {"path", "sha256", "bytes", "media_type"},
+        )
+        schema = json.loads(
+            (attempt_dir / "result-schema.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(len(schema["oneOf"]), 3)
+        self.assertEqual(
+            schema["oneOf"][0]["properties"]["status"], {"const": "checkpoint"}
+        )
+        self.assertNotIn("completion_kind", schema["oneOf"][0]["properties"])
+        self.assertEqual(inspected["result"]["status"], "checkpoint")
+        self.assertEqual(inspected["phase"], "work")
+
+    def test_managed_phases_use_append_only_attempts_and_fresh_threads(self) -> None:
+        launched = tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=self.managed_handoff(),
+            codex_bin=str(self.fake_codex),
+        )
+        work = self.wait_dead()
+        self.assertEqual(work["attempt_id"], "000001")
+        self.assertEqual(work["phase"], "work")
+        self.assertEqual(work["result"]["status"], "checkpoint")
+
+        advanced_base = "b" * 40
+        review_started = tmux_worker.advance_worker(
+            **self.common(),
+            phase_snapshot=self.phase_snapshot(base_sha=advanced_base),
+            expected_attempt_id="000001",
+            expected_checkpoint_digest=work["checkpoint_digest"],
+            revalidated=True,
+            codex_bin=str(self.fake_codex),
+        )
+        self.assertEqual(review_started["attempt_id"], "000002")
+        self.assertEqual(review_started["phase"], "review")
+        state_dir = Path(str(launched["state_dir"]))
+        review_snapshot = json.loads(
+            (state_dir / "attempts" / "000002" / "phase-snapshot.json").read_text()
+        )
+        self.assertEqual(review_snapshot["live"]["base_sha"], advanced_base)
+        review = self.wait_dead()
+        self.assertEqual(review["thread_id"], "thread-000002")
+
+        handoff_started = tmux_worker.advance_worker(
+            **self.common(),
+            phase_snapshot=self.phase_snapshot(),
+            expected_attempt_id="000002",
+            expected_checkpoint_digest=review["checkpoint_digest"],
+            revalidated=True,
+            codex_bin=str(self.fake_codex),
+        )
+        self.assertEqual(handoff_started["phase"], "handoff")
+        terminal = self.wait_dead()
+        self.assertEqual(terminal["result"]["status"], "clean")
+        self.assertEqual(terminal["result"]["completion_kind"], "materially_clean")
+        self.assertEqual(
+            sorted(path.name for path in (state_dir / "attempts").iterdir()),
+            ["000001", "000002", "000003"],
+        )
+        for attempt_id in ("000001", "000002", "000003"):
+            self.assertTrue((state_dir / "attempts" / attempt_id / "exit.json").exists())
+
+    def test_complete_phase_maps_post_merge_finalize_to_terminal_result(self) -> None:
+        handoff = self.managed_handoff(phase="complete")
+        handoff["task_state"] = "in_review"
+        handoff["pull_request"] = {"state": "merged", "number": 123}
+        launched = tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=handoff,
+            codex_bin=str(self.fake_codex),
+        )
+        completed = self.wait_dead()
+        self.assertEqual(completed["phase"], "complete")
+        self.assertEqual(completed["result"]["completion_kind"], "merged")
+        schema = json.loads(
+            (
+                Path(str(launched["state_dir"]))
+                / "attempts"
+                / "000001"
+                / "result-schema.json"
+            ).read_text()
+        )
+        self.assertEqual(
+            schema["oneOf"][0]["properties"]["completion_kind"]["enum"],
+            ["merged"],
+        )
+
+    def test_material_review_advances_to_fix_and_stale_replay_is_rejected(self) -> None:
+        tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=self.managed_handoff(),
+            codex_bin=str(self.fake_codex),
+        )
+        work = self.wait_dead()
+        tmux_worker.advance_worker(
+            **self.common(),
+            phase_snapshot=self.phase_snapshot(test_scenario="material"),
+            expected_attempt_id="000001",
+            expected_checkpoint_digest=work["checkpoint_digest"],
+            revalidated=True,
+            codex_bin=str(self.fake_codex),
+        )
+        review = self.wait_dead()
+        self.assertEqual(
+            review["result"]["checkpoint"]["findings_by_severity"]["MAJOR"], 1
+        )
+        fixed = tmux_worker.advance_worker(
+            **self.common(),
+            phase_snapshot=self.phase_snapshot(),
+            expected_attempt_id="000002",
+            expected_checkpoint_digest=review["checkpoint_digest"],
+            revalidated=True,
+            codex_bin=str(self.fake_codex),
+        )
+        self.assertEqual(fixed["phase"], "fix")
+        with self.assertRaisesRegex(tmux_worker.TmuxWorkerError, "stale attempt replay"):
+            tmux_worker.advance_worker(
+                **self.common(),
+                phase_snapshot=self.phase_snapshot(),
+                expected_attempt_id="000002",
+                expected_checkpoint_digest=review["checkpoint_digest"],
+                revalidated=True,
+                codex_bin=str(self.fake_codex),
+            )
+
+    def test_work_conflict_uses_fresh_reconciler_then_returns_to_work(self) -> None:
+        handoff = self.managed_handoff()
+        handoff["checks"] = "RETURN_CONFLICT"
+        tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=handoff,
+            codex_bin=str(self.fake_codex),
+        )
+        conflict = self.wait_dead()
+        self.assertEqual(conflict["result"]["status"], "conflict")
+        self.assertEqual(conflict["phase"], "work")
+        reconciled = tmux_worker.advance_worker(
+            **self.common(),
+            phase_snapshot=self.phase_snapshot(),
+            expected_attempt_id=conflict["attempt_id"],
+            expected_checkpoint_digest=conflict["transition_digest"],
+            revalidated=True,
+            codex_bin=str(self.fake_codex),
+        )
+        self.assertEqual(reconciled["phase"], "reconcile")
+        reconcile_result = self.wait_dead()
+        self.assertEqual(reconcile_result["result"]["status"], "checkpoint")
+        returned = tmux_worker.advance_worker(
+            **self.common(),
+            phase_snapshot=self.phase_snapshot(),
+            expected_attempt_id=reconcile_result["attempt_id"],
+            expected_checkpoint_digest=reconcile_result["transition_digest"],
+            revalidated=True,
+            codex_bin=str(self.fake_codex),
+        )
+        self.assertEqual(returned["phase"], "work")
+        state_dir = Path(str(returned["state_dir"]))
+        attempts = sorted(path.name for path in (state_dir / "attempts").iterdir())
+        self.assertEqual(attempts, ["000001", "000002", "000003"])
+        self.wait_dead()
+
+    def test_managed_advance_requires_zero_exit_and_exact_checkpoint_digest(self) -> None:
+        launched = tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=self.managed_handoff(),
+            codex_bin=str(self.fake_codex),
+        )
+        work = self.wait_dead()
+        with self.assertRaisesRegex(tmux_worker.TmuxWorkerError, "stale checkpoint digest"):
+            tmux_worker.advance_worker(
+                **self.common(),
+                phase_snapshot=self.phase_snapshot(),
+                expected_attempt_id="000001",
+                expected_checkpoint_digest="0" * 64,
+                revalidated=True,
+                codex_bin=str(self.fake_codex),
+            )
+        state_dir = Path(str(launched["state_dir"]))
+        (state_dir / "attempts" / "000001" / "exit.json").unlink()
+        with self.assertRaisesRegex(tmux_worker.TmuxWorkerError, "completed zero exit"):
+            tmux_worker.advance_worker(
+                **self.common(),
+                phase_snapshot=self.phase_snapshot(),
+                expected_attempt_id="000001",
+                expected_checkpoint_digest=work["checkpoint_digest"],
+                revalidated=True,
+                codex_bin=str(self.fake_codex),
+            )
+
+    def test_controller_merges_evidence_backed_field_guide_proposals_once(self) -> None:
+        launched = tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=self.managed_handoff(),
+            codex_bin=str(self.fake_codex),
+        )
+        completed = self.wait_dead()
+        state_dir = Path(str(launched["state_dir"]))
+        blob_sha = self.git(
+            "rev-parse", "HEAD:tracked.txt", cwd=self.worktree
+        ).stdout.strip()
+        proposal_path = state_dir / "attempts" / "000001" / "guide-proposals.json"
+        proposal_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "id": "repo.tracked",
+                        "text": "tracked.txt is repository evidence.",
+                        "tags": ["test"],
+                        "evidence": [{"path": "tracked.txt", "blob_sha": blob_sha}],
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        tmux_worker.advance_worker(
+            **self.common(),
+            phase_snapshot=self.phase_snapshot(),
+            expected_attempt_id=completed["attempt_id"],
+            expected_checkpoint_digest=completed["transition_digest"],
+            revalidated=True,
+            codex_bin=str(self.fake_codex),
+        )
+        manifest = json.loads((state_dir / "manifest.json").read_text())
+        guide = json.loads(Path(manifest["coordination"]["field_guide"]).read_text())
+        self.assertEqual([item["id"] for item in guide["entries"]], ["repo.tracked"])
+        marker = state_dir / "attempts" / "000001" / "guide-merged.json"
+        self.assertTrue(marker.exists())
+
+    def test_managed_checkpoint_rejects_partial_and_extra_fields(self) -> None:
+        launched = tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=self.managed_handoff(),
+            codex_bin=str(self.fake_codex),
+        )
+        completed = self.wait_dead()
+        state_dir = Path(str(launched["state_dir"]))
+        result_path = state_dir / "attempts" / "000001" / "result.json"
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        result["unexpected"] = True
+        result_path.write_text(json.dumps(result), encoding="utf-8")
+        inspected = self.inspect()
+        self.assertEqual(inspected["result"]["status"], "failed")
+        self.assertIsNone(inspected["checkpoint_digest"])
+        with self.assertRaisesRegex(tmux_worker.TmuxWorkerError, "advanceable checkpoint"):
+            tmux_worker.advance_worker(
+                **self.common(),
+                phase_snapshot=self.phase_snapshot(),
+                expected_attempt_id="000001",
+                expected_checkpoint_digest=completed["checkpoint_digest"],
+                revalidated=True,
+                codex_bin=str(self.fake_codex),
+            )
+
+    def test_retained_v2_results_remain_readable_and_v3_digest_is_bound(self) -> None:
+        launched = tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=self.managed_handoff(),
+            codex_bin=str(self.fake_codex),
+        )
+        completed = self.wait_dead()
+        result = dict(completed["result"])
+        context_digest = result.pop("context_digest")
+        result["schema_version"] = 2
+        path = Path(str(launched["state_dir"])) / "retained-v2-result.json"
+        path.write_text(json.dumps(result), encoding="utf-8")
+        self.assertIsNotNone(
+            tmux_worker._read_result(
+                path,
+                "TASK-123",
+                expected_phase="work",
+                expected_attempt_id="000001",
+                managed=True,
+                managed_version=2,
+            )
+        )
+        result["schema_version"] = 3
+        result["context_digest"] = context_digest
+        path.write_text(json.dumps(result), encoding="utf-8")
+        self.assertIsNone(
+            tmux_worker._read_result(
+                path,
+                "TASK-123",
+                expected_phase="work",
+                expected_attempt_id="000001",
+                managed=True,
+                managed_version=3,
+                expected_context_digest="f" * 64,
+            )
+        )
+
+    def test_managed_transition_lock_rejects_concurrent_restart(self) -> None:
+        launched = tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=self.managed_handoff(),
+            codex_bin=str(self.fake_codex),
+        )
+        completed = self.wait_dead()
+        state_dir = Path(str(launched["state_dir"]))
+        with tmux_worker._transition_lock(state_dir):
+            with self.assertRaisesRegex(
+                tmux_worker.TmuxWorkerError, "transition is already in progress"
+            ):
+                tmux_worker.advance_worker(
+                    **self.common(),
+                    phase_snapshot=self.phase_snapshot(),
+                    expected_attempt_id="000001",
+                    expected_checkpoint_digest=completed["checkpoint_digest"],
+                    revalidated=True,
+                    codex_bin=str(self.fake_codex),
+                )
+
+    def test_managed_resume_reuses_thread_only_within_same_phase(self) -> None:
+        handoff = self.managed_handoff()
+        handoff["checks"] = "MALFORMED_RESULT"
+        launched = tmux_worker.launch_worker(
+            **self.common(),
+            prompt="ignored",
+            handoff=handoff,
+            codex_bin=str(self.fake_codex),
+        )
+        failed = self.wait_dead()
+        self.assertEqual(failed["result"]["status"], "failed")
+        resumed = tmux_worker.resume_worker(
+            **self.common(),
+            prompt="retry interrupted phase",
+            codex_bin=str(self.fake_codex),
+        )
+        self.assertEqual(resumed["attempt_id"], "000002")
+        self.assertEqual(resumed["phase"], "work")
+        self.assertEqual(resumed["thread_id"], "thread-000001")
+        self.wait_dead()
+        state_dir = Path(str(launched["state_dir"]))
+        invocation = json.loads(
+            (state_dir / "attempts" / "000002" / "fake-codex-invocations.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()[0]
+        )
+        self.assertIn("resume", invocation["args"])
+        self.assertIn("thread-000001", invocation["args"])
+        attempt = state_dir / "attempts" / "000002"
+        self.assertLessEqual(len((attempt / "prompt.txt").read_bytes()), 2 * 1024)
+        context_manifest = json.loads(
+            (attempt / "context-manifest.json").read_text()
+        )
+        self.assertIn("resume_instruction", context_manifest["projections"])
 
     def test_resume_uses_exact_recorded_thread_and_fresh_requires_revalidation(self) -> None:
         launched = self.launch()
@@ -271,7 +745,8 @@ class TmuxWorkerTest(unittest.TestCase):
             .read_text(encoding="utf-8")
             .splitlines()
         ]
-        self.assertEqual(invocations[-1]["args"][0:2], ["exec", "resume"])
+        self.assertEqual(invocations[-1]["args"][0], "exec")
+        self.assertIn("resume", invocations[-1]["args"])
         self.assertIn("thread-exact-123", invocations[-1]["args"])
 
         (state_dir / "events.jsonl").unlink()

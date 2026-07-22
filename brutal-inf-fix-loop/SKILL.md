@@ -1,56 +1,71 @@
 ---
 name: brutal-inf-fix-loop
-description: Review and fix every generated finding on the current feature branch's open pull request until a fresh all-severity review is completely clean. Use when the user wants an uncapped Brutal fix loop with no pass or no-progress limit.
+description: Review and fix an open pull request without a pass limit until a fresh review has no CRITICAL or MAJOR findings. When material findings exist, drain every severity opportunistically; a final MINOR/NIT-only pass is materially clean and may stop.
 ---
 
 # Brutal Infinite Fix Loop
 
-Continue the provider-neutral review/fix cycle until there is nothing left to
-complain about.
+Run an uncapped material-correctness loop. “Infinite” removes arbitrary pass and
+no-progress caps; it does not require polishing MINOR/NIT findings forever.
 
 ## Source Skills
 
-Before starting, read:
+Read `../brutal-pr-review/SKILL.md` and
+`../brutal-pr-finding-fixer/SKILL.md` before starting. Follow their safety and
+provider rules.
 
-- ../brutal-pr-review/SKILL.md
-- ../brutal-pr-finding-fixer/SKILL.md
+## Convergence Contract
 
-Follow each source skill for review and fix operations. Use this skill only for
-unbounded ordering and termination.
-
-## Invariants
-
-- Require an open pull request for the current feature branch.
-- Review every pass in all-findings mode: CRITICAL, MAJOR, MINOR, and NIT.
-- Declare success only after a fresh review returns validated_finding_count: 0.
+- Review every pass for CRITICAL, MAJOR, MINOR, and NIT findings.
+- Continue while the fresh pass contains at least one CRITICAL or MAJOR.
+- When material findings exist, publish and drain all four severities from that
+  pass. Lower-severity findings are worth fixing while a material cycle is
+  already required.
+- Stop successfully when a fresh pass has zero CRITICAL and zero MAJOR.
+  - No findings at all: `completion_kind: zero_findings`.
+  - MINOR/NIT only: `completion_kind: materially_clean`. Put the residuals in
+    the review summary and task record; do not create actionable finding
+    comments for them.
 - Do not impose a pass, elapsed-time, token, cost, commit, or no-progress limit.
-- Do not stop because a fixer pass produced no commit, every occurrence was
-  skipped, or the same fingerprint recurred.
-- Preserve hard source-skill guards. A safety or dependency failure stops
-  blocked; user interruption stops canceled.
+- A hard source-skill guard stops `blocked`; user interruption stops `canceled`.
 
-## Loop
+## Managed Tmux Mode
 
-1. Reuse a caller's validated integrations, canonical local work-store root,
-   and exact pull request when supplied. Otherwise resolve BRUTAL.md, the code
-   host, work store, and current open pull request.
-2. Run brutal-pr-review in all-findings mode against a fresh head snapshot.
-3. If the review reports zero validated findings, stop successfully.
-4. Run brutal-pr-finding-fixer continuously across all severities until the
-   current generated queue is drained or a hard guard blocks.
-5. Re-resolve the pull request and its latest head even when no code-changing
-   commit was made.
-6. Return to step 2 without applying any arbitrary limit.
+Do not run the whole loop inside one Codex thread. Obey the phase manifest from
+the supervisor, validate its digest/artifacts, and perform only that phase:
 
-After each pass, give only a concise progress update with pass number, reviewed
-head, findings by severity, fixes/skips, commits, and current blocker state.
-Do not turn a progress update into a terminal response while the loop remains
-eligible to continue.
+- `review`: run one fresh material-convergence review and return a checkpoint
+  with base/head snapshot, review id, counts by severity, queue counts, and
+  residual MINOR/NIT findings.
+- `fix`: drain the complete generated queue for that review occurrence, verify,
+  push, and return a checkpoint.
+
+The supervisor derives `review -> fix` when CRITICAL+MAJOR is nonzero and
+`review -> handoff` otherwise. Never choose or request the next phase yourself.
+Return the exact managed result and exit, echoing the v3 context digest when
+present. Retained v2 attempts keep their v2 result. Same-thread resume is only
+for an interrupted attempt in the same phase.
+
+## Standalone Or Native Mode
+
+1. Reuse validated integrations and the exact open pull request when supplied;
+   otherwise resolve them through BRUTAL.md.
+2. Run one fresh `brutal-pr-review` material-convergence pass.
+3. If CRITICAL+MAJOR is zero, stop with the appropriate completion kind.
+4. Drain every generated severity with `brutal-pr-finding-fixer` until no
+   unhandled occurrence remains or a hard guard blocks.
+5. Re-resolve the pull request and latest head, even if no commit was made, and
+   return to step 2.
+
+Progress updates contain only pass, base/head snapshot, severity counts,
+fixed/skipped totals, commits, verification status, and blocker state. Redirect
+verbose test, diff, and provider output to run-local temporary logs. Report
+status and duration; on failure include only the last 200 lines or 16 KiB,
+whichever is smaller.
 
 ## Final Response
 
-On a clean review, report integrations, pull request, final head, total passes,
-findings fixed/skipped by severity, commits, verification, and the zero-finding
-review id. On a hard stop or user interruption, report the same data plus the
-exact blocker and remaining generated occurrences; never describe that outcome
-as clean.
+Report integrations, pull request, final base/head snapshot, total passes,
+completion kind, counts fixed/skipped by severity, residual MINOR/NIT findings,
+commits, verification, and final review id. On a hard stop, include the exact
+blocker and remaining generated occurrences; never describe it as clean.

@@ -155,12 +155,14 @@ questions use `type:investigation`, so `brutal-worker` cannot select them.
 ## Brutal execution
 
 - [`brutal-worker`](brutal-worker/SKILL.md) owns one exact task through an
-  isolated worktree, one stacked pull request, and a clean uncapped Brutal
-  review/fix loop.
+  isolated worktree, one stacked pull request, and an uncapped materially clean
+  Brutal review/fix loop.
 - [`brutal-swarm`](brutal-swarm/SKILL.md) asks for a concurrency cap and drains
   a task graph through parallel workers. It defaults to one retained tmux Codex
-  session per task; `BRUTAL.md` can select native subagents instead. Independent
-  roots run side by side, while single-blocker children target their blocker
+  session per task with fresh phase-scoped Codex threads and content-addressed
+  context manifests; `BRUTAL.md` can select native subagents instead. Decision
+  domains and touch surfaces prevent unsafe parallel overlap. Independent roots
+  run side by side, while single-blocker children target stack-ready blocker
   branches until those PRs merge.
 
 ## Brutal pull-request loops
@@ -172,7 +174,8 @@ questions use `type:investigation`, so `brutal-worker` cannot select them.
 - [`brutal-pr-fix-loop`](brutal-pr-fix-loop/SKILL.md) preserves the bounded
   three-pass review/fix behavior.
 - [`brutal-inf-fix-loop`](brutal-inf-fix-loop/SKILL.md) repeats without a pass
-  or no-progress cap until a fresh all-severity review has zero findings.
+  or no-progress cap until a fresh all-severity review has no CRITICAL or MAJOR
+  findings. A MINOR/NIT-only pass is recorded as materially clean.
 
 This rework adopts the grilling, decision-complete specification,
 expand-contract, and fog-of-war ideas from

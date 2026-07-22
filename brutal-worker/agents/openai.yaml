@@ -1,4 +1,4 @@
 interface:
   display_name: "Brutal Worker"
-  short_description: "One-ticket stacked-PR implementation"
-  default_prompt: "Use $brutal-worker to implement and review one exact BRUTAL.md task."
+  short_description: "One-ticket context-bounded implementation"
+  default_prompt: "Use $brutal-worker to complete one exact BRUTAL.md task; in managed mode validate the manifest and execute only the supplied phase."

@@ -1,89 +1,110 @@
 ---
 name: brutal-swarm
-description: Coordinate multiple BRUTAL.md implementation tasks through parallel tmux Codex workers or native subagents, with one isolated git worktree and stacked pull request per task. Use when Codex should drain a task graph concurrently while preserving exact ticket ownership and blocker-based PR chains.
+description: Drain a BRUTAL.md task graph through parallel isolated workers and stacked pull requests. Managed tmux workers use append-only phase attempts and fresh Codex threads to avoid carrying implementation context through every review/fix pass.
 ---
 
 # Brutal Swarm
 
-Schedule task workers without taking ownership of their tickets or pull requests.
+Schedule exact-task workers without taking ownership of their tickets or pull
+requests.
 
 ## Required Context
 
-1. Read `../brutal-shared/integration-resolver.md` and
-   `../brutal-shared/support/contracts.md`.
-2. Resolve one work store and one code host, load both support modules, and
-   retain their normalized identities for every worker.
-3. Read `../brutal-worker/SKILL.md` and
+1. Read `../brutal-shared/integration-resolver.md`,
+   `../brutal-shared/support/contracts.md`, `../brutal-worker/SKILL.md`, and
    `references/parallel-execution.md` completely.
-4. Read repository rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and their
-   referenced workflow documents.
+   For coordinated graphs and managed v3 launches, also read
+   `references/compositional-harness.md`.
+2. Resolve one work store and code host, load both support modules, and retain
+   their normalized identities.
+3. Read applicable repository workflow rules.
 
 ## Start A Run
 
-1. Discover resumable `in_progress` and `in_review` work plus unblocked or
-   stack-ready `todo` artifacts of type `task` or `review_finding`.
-2. Group candidates by plan parent. Use an explicitly requested parent; infer
-   the only candidate graph; otherwise ask the user to select one graph.
-3. Resolve an explicit target branch or the code host's default branch. Record
-   its remote head. Never include uncommitted changes from the initiating
-   worktree.
-4. Ask the user for the maximum number of ticket workers to run concurrently.
-   This blocking question is mandatory on every run. Treat the answer as a
-   concurrency cap, disclose any lower platform capacity, and use the smaller
-   value.
+1. Discover resumable `in_progress`/`in_review` work and stack-ready `todo`
+   artifacts of kind `task` or `review_finding`. Select one plan graph.
+2. Resolve the explicit or default root branch and record its remote head.
+   Never inherit uncommitted changes from the initiating worktree.
+3. Ask for the maximum concurrent ticket workers on every run. Use the smaller
+   of that answer and platform capacity.
+4. Resolve `execution.worker_runtime` with `scripts/runtime_config.py` before
+   claiming or provisioning. Missing means `tmux`; accept only `tmux` or
+   `subagent` and never fall back implicitly.
 5. For a local work store, resolve its canonical absolute root against the
-   primary git worktree before launching linked worktrees.
-6. Use `scripts/runtime_config.py` to resolve `execution.worker_runtime`,
-   defaulting to `tmux`. Accept only `tmux` or `subagent`. Validate the selected
-   runtime before creating a worktree or claiming a task; never fall back
-   implicitly.
+   primary worktree.
 
 ## Drain The Graph
 
-Use `scripts/swarm_wave.py` with the normalized graph described in the reference
-to choose each deterministic wave.
+Use `scripts/swarm_wave.py` on fresh normalized provider reads for every wave.
+Resume owned attempts before starting `todo` work.
+Include the plan decision registry and every ticket's coordination domains.
+Serialize reported touch conflicts. Hold duplicate decision owners and
+unresolved decision consumers; do not hand-select around those guards.
 
-For every selected artifact:
+For each selected artifact:
 
-1. Use `scripts/worktree_manager.py` to create or safely resume its branch and
-   sibling worktree. Provision worktrees serially before launching workers.
-2. Launch one persistent worker in that worktree with the exact managed handoff
-   from the reference. For `tmux`, use `scripts/tmux_worker.py`; for `subagent`,
-   use a native collaboration worker. Instruct it to use `$brutal-worker` and no
-   other task.
-3. After handoff, do not claim, comment on, transition, implement, push, review,
-   or edit that task or pull request. The swarm may read state and relay worker
-   progress.
-4. If the worker loses its claim, remove only the verified empty worktree and
-   schedule the next candidate. If it blocks after making progress, preserve
-   its worktree and exclude its descendants while independent workers continue.
-5. After a clean worker result, remove the worktree only when the returned local
-   head equals the verified pushed pull-request head. Keep its local and remote
-   branches while the pull request is open.
+1. Provision or safely resume its sibling worktree serially with
+   `scripts/worktree_manager.py`.
+2. Pass the exact managed handoff from the execution reference. Use
+   `scripts/tmux_worker.py` for tmux, or one persistent native collaboration
+   worker for the subagent runtime. Instruct it to use `$brutal-worker` for only
+   that task.
+3. After handoff, do not claim, comment, transition, implement, push, review, or
+   edit that task/PR. The swarm may re-read state, advance managed phases, and
+   relay progress.
+4. Preserve progress on failure. Remove only a verified empty worktree after
+   claim loss. Exclude blocked descendants while independent work continues.
 
-Rebuild the graph whenever a worker reaches a terminal result. Continue waves
-until no resumable, reconcilable, or stack-ready artifact remains. Do not stop
-after the first wave or after launching the requested number in total.
+For tmux, count only live panes toward the concurrency cap. Retained dead panes
+occupy no slot. When a pane returns a valid zero-exit checkpoint, revalidate the
+task, ownership, PR, branch/base/head, and checks; write a mutable phase
+snapshot; then call `tmux_worker.py advance` with the active attempt id and
+checkpoint digest. The controller derives the next phase. Never resume a
+completed checkpoint or reuse its Codex thread across phases.
 
-For tmux runs, count only live worker panes toward the cap. Keep every exited
-session, including successful sessions, until explicit guarded cleanup. Runtime
-logs and sessions are not workflow truth and never authorize task transitions.
+For new managed runs, build task capsules and phase manifests with
+`scripts/harness_context.py`. Keep raw payloads in content-addressed artifacts,
+send only the bounded manifest prompt, and require the result to echo its
+context digest. Merge evidence-backed Field Guide proposals only in the
+controller.
+
+Prioritize an interrupted same-phase resume before new work, still within the
+cap. Use exact-thread `resume` only for that interruption. Every phase and retry
+gets an append-only attempt directory; never overwrite or accept a stale
+attempt, missing exit record, partial result, or mismatched digest.
+
+After terminal `clean`, remove the worktree only when the returned local head
+equals the verified pushed PR head. Keep branches while PRs remain open. A
+`zero_findings` or `materially_clean` review gate is stack-ready; literal
+`pr.clean` remains a compatibility input, not the only readiness signal.
+
+Rebuild the graph whenever a worker reaches a checkpoint or terminal result.
+Continue until no resumable, reconcilable, or stack-ready artifact remains.
+Do not stop after the first wave.
 
 ## Reconcile Existing Stacks
 
-Prioritize exact-task worker handoffs that:
+Prioritize exact-task handoffs that complete merged tickets, reconcile children
+after a base advances, or resume matching owned work. A child worker merges the
+new base normally, resolves conflicts, verifies, pushes, retargets when needed,
+and re-enters the material-correctness review/fix loop. Never merge a PR,
+force-push, or let a parent worker edit a child.
 
-- move a ticket whose pull request merged from `in_review` to `done`
-- update an open child after its base branch advanced or its blocker merged
-- resume an `in_progress` task with a matching branch or pull request
+When managed `work` or `fix` returns a conflict manifest, advance to the fresh
+neutral `reconcile` phase from the compositional harness. A mechanical success
+returns to the originating phase for publication. A semantic conflict blocks
+with its evidence and worktree preserved.
 
-Make each child worker merge the new base normally, push, retarget its own pull
-request when needed, rerun verification, and complete a fresh infinite fix
-loop. Never merge a pull request or force-push a branch.
+## Operational Output
+
+Keep full tmux JSONL, test, diff, and provider output in protected run/attempt
+logs. Relay only status, duration, checkpoint summary, and on failure the last
+200 lines or 16 KiB, whichever is smaller. Logs and sessions are observability,
+not workflow truth.
 
 ## Final Response
 
-Report integrations, selected graph, requested and effective concurrency,
-selected runtime, workers launched, task/session/worktree/branch/pull-request
-mappings, clean and blocked results, retained sessions and worktrees, attach and
-cleanup commands, and the reasons remaining artifacts are not stack-ready.
+Report integrations, graph, requested/effective concurrency, runtime, worker
+and phase attempts, task/session/worktree/branch/PR mappings, completion kinds,
+residual lower-severity findings, blocked results, retained evidence, safe
+attach/cleanup commands, and reasons remaining artifacts are not stack-ready.

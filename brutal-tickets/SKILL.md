@@ -7,6 +7,8 @@ description: Decompose an approved specification into the smallest useful depend
 
 Design implementation work that a fresh agent can complete one ticket at a
 time. Require an approved, decision-complete specification before starting.
+For a graph intended for `$brutal-swarm`, read
+`../brutal-swarm/references/compositional-harness.md` before drafting.
 
 ## Draft Cohesive Scopes
 
@@ -57,6 +59,9 @@ Use this body contract:
 ## What To Build
 ## Acceptance Criteria
 ## Blocked By
+## Decisions Owned
+## Decisions Consumed
+## Touch Surfaces
 ## Implementation Notes
 ## Verification Commands
 ```
@@ -65,6 +70,10 @@ Describe end-to-end behavior in `What To Build`; keep layer-by-layer detail in
 implementation notes. Use stable module and interface names rather than guessed
 paths. Make acceptance criteria externally observable and verification commands
 exact. Express dependencies as ticket titles until backend identifiers exist.
+Use the harness contract's exact decision and touch-surface shapes. Give every
+approved decision one owner, make consumers name its stable ID, and declare
+every file or prefix the ticket expects to edit. Preserve absent domains only
+for legacy tickets.
 
 ## Approval Gate
 

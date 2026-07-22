@@ -1,6 +1,6 @@
 ---
 name: brutal-worker
-description: Own one exact BRUTAL.md implementation task or review finding through claim, isolated-worktree implementation, verification, stacked pull request creation, and an uncapped all-severity Brutal review/fix loop. Use for a task handed off by brutal-swarm or when the user supplies one stable task reference.
+description: Own one exact BRUTAL.md task or review finding through claim, isolated implementation, verification, stacked pull request publication, and an uncapped material-correctness review/fix loop. Managed tmux workers execute one phase per fresh Codex thread.
 ---
 
 # Brutal Worker
@@ -9,65 +9,105 @@ Complete one exact work item and its pull request. Never select a replacement.
 
 ## Required Context
 
-1. Require a stable task or review-finding reference. If none was supplied,
-   request one or recommend `$brutal-swarm`; do not query for the next task.
-2. Read `../brutal-shared/integration-resolver.md` and
-   `../brutal-shared/support/contracts.md`.
-3. Reuse a managed handoff's validated work-store identity, code-host identity,
-   canonical local-store root, worktree, branch, base, and pull request. Resolve
-   any missing identity and load both selected support modules before mutation.
-   Treat runtime session names, state directories, and logs as observational;
-   they grant no workflow authority.
-4. Read `../brutal-swarm/references/parallel-execution.md`. For a standalone
-   invocation, use `../brutal-swarm/scripts/worktree_manager.py` to create or
-   resume the isolated worktree before editing.
-5. Read `../brutal-inf-fix-loop/SKILL.md` and its required source skills.
-6. Read repository rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and their
-   referenced workflow documents.
+Always require the stable task reference and read applicable repository rules.
+Read `../brutal-shared/integration-resolver.md` and
+`../brutal-shared/support/contracts.md`. Reuse a managed assignment’s validated
+work-store/code-host identities, canonical local root, worktree, branch, and
+base; resolve only missing data needed by the current phase.
+
+For standalone work, also read
+`../brutal-swarm/references/parallel-execution.md`, create or resume the isolated
+worktree with `../brutal-swarm/scripts/worktree_manager.py`, and read
+`../brutal-inf-fix-loop/SKILL.md` plus its source skills.
+
+For managed tmux work, the immutable handoff establishes assignment identity;
+the phase snapshot supplies revalidated mutable state. Runtime names, logs, and
+old snapshots are observational and grant no provider authority.
+For managed v3, read and validate the context manifest and every referenced
+artifact. Follow
+`../brutal-swarm/references/compositional-harness.md` for capsules,
+projections, Field Guide proposals, review lenses, and reconciliation.
 
 ## Hard Rules
 
-- Own only the handed-off work item, branch, worktree, and pull request.
-- Select only `type:task` or `type:review-finding`; never implement a plan or
-  investigation artifact.
+- Own only the handed-off item, branch, worktree, and pull request.
+- Select only `task` or `review_finding`; never implement a plan or
+  investigation.
 - Never merge, approve, request changes, force-push, delete a remote branch, or
-  create a second pull request for the same item.
-- Preserve unrelated user changes. A managed worker edits only its isolated
-  worktree; a standalone worker must create or safely resume one with the
-  Brutal Swarm worktree helper.
-- Keep the item `in_progress` until a fresh all-severity review is clean. Move
-  it to `in_review` only then, and to `done` only after its pull request merged.
+  create a second pull request for the item.
+- Preserve unrelated changes and edit only the isolated worktree.
+- Keep the item `in_progress` until a fresh review has no CRITICAL or MAJOR.
+  Then it may move to `in_review`; move it to `done` only after its PR merged.
 
-## Claim The Exact Item
+## Managed Phase Protocol
 
-1. Read the full body, history, comments, parent, blockers, assignment, and
-   current pull-request link.
-2. Handle existing state before code changes:
-   - merged matching pull request: record acceptance and move the item to `done`
-   - open matching pull request or branch: resume it
-   - closed-unmerged pull request or identity mismatch: record `BLOCKED:` and stop
-3. Claim from the expected state with the adapter's strongest assignment and
-   transition operation. Add the run marker, then re-read state and ownership.
-   Continue only when the claim is proven; otherwise return `claim_lost` without
-   changing code, branch, or pull request.
-4. A blocked dependency may remain logically open only when the task has one
-   direct blocker, its pull request is open and clean, and the handoff uses that
-   blocker branch as this task's base. A task with several direct blockers waits
-   until every blocker pull request merges into their common target.
+When the prompt contains a managed phase manifest, do only that phase and
+return the supervisor’s exact result, including the v3 `context_digest` when
+present. Retained v2 snapshots keep their v2 behavior. Do not continue into the
+next phase.
 
-## Implement And Publish
+### `work`
 
-1. Confirm that the current worktree, branch, base branch, base SHA, and task
-   marker match the handoff.
-2. Identify affected files, existing patterns, tests, and verification commands.
-3. Implement with TDD when practical: make the focused test fail, implement the
-   smallest correct change, and make it pass.
-4. Remove unnecessary code and accidental churn. Run required formatting,
-   focused tests, and repository checks.
-5. Self-review correctness, reliability, error handling, security, performance,
-   resource usage, simplicity, and maintainability. Fix every material issue.
-6. Commit atomic verified changes and push normally.
-7. Find a pull request by exact marker and head branch before creating one. Use:
+Read the full item, history, parent/blockers, assignment, and existing PR link.
+Prove the exact claim from the expected state before changing code. Validate
+worktree, branch, base branch/SHA, and branch task marker. Implement, test,
+self-review, commit, push, and find-or-create the single marked PR. Return a
+checkpoint with current base/head, PR, verification, and zeroed review fields.
+
+### `review`
+
+Read `../brutal-inf-fix-loop/SKILL.md` and
+`../brutal-pr-review/SKILL.md`. Use only the exact PR/base/head snapshot and
+relevant repository rules. Run one fresh `material_convergence` pass. Return
+counts for all severities, review id, queued/unhandled counts, summary status,
+and residual MINOR/NIT findings. Exit after the checkpoint.
+
+### `fix`
+
+Read `../brutal-inf-fix-loop/SKILL.md` and
+`../brutal-pr-finding-fixer/SKILL.md`. Drain the full generated all-severity
+queue for the supplied review occurrence, verify, push, re-read base/head, and
+return a checkpoint. Do not start a review.
+
+If `work` or `fix` hits a merge/rebase conflict, preserve it as an artifact,
+return the exact conflict manifest, and stop.
+
+### `reconcile`
+
+Start fresh with only the conflict projection and governing decisions. Resolve
+mechanically, create a local merge commit, and run focused verification. Leave
+push/publication to the originating phase. Return `blocked` when resolution
+requires a product or architecture decision.
+
+### `handoff`
+
+This phase is reached only after a fresh review has zero CRITICAL and zero
+MAJOR. Revalidate PR identity, base/head, task ownership, queue state, and
+required checks. Reuse same-head verification only when the complete base/head
+snapshot still matches and checks still pass; otherwise rerun it. Record
+changed files, commands/results, commits, PR/base, review id, completion kind,
+and residual MINOR/NIT findings on the task. Move it to `in_review` and return
+terminal `clean` with `zero_findings` or `materially_clean`.
+
+### `complete`
+
+After a matching PR is verified merged, record acceptance, move the item to
+`done`, and return terminal `clean` with `completion_kind: merged`. This is the
+only preassigned phase that replaces the scheduler’s post-merge `finalize`
+action; never use `finalize` as a managed worker phase.
+
+The supervisor alone derives legal phase transitions. A fresh phase uses a new
+Codex thread. Resume the exact recorded thread only when the current attempt was
+interrupted in the same phase. Return `blocked`, `canceled`, `claim_lost`, or
+`failed` with exact recovery state on hard stops.
+
+## Standalone Lifecycle
+
+1. Read and claim the exact item. Resume a matching open PR/branch; complete a
+   matching merged PR; block on closed-unmerged or identity mismatch.
+2. Confirm the isolated branch/base and implement the smallest verified change.
+3. Commit and push normally. Find the PR by exact marker and head before
+   creating one against the handed-off base:
 
        <!-- brutal-worker:v1:<stable-task-ref> -->
        Source: brutal-worker
@@ -77,29 +117,9 @@ Complete one exact work item and its pull request. Never select a replacement.
        Stack base: <branch and blocker ref or root>
        Verification: <commands and results>
 
-   Title it `[<task-ref>] <task title>` and open it ready for review against the
-   handed-off base. Patch only the matching owned pull request on retry.
+4. Run `$brutal-inf-fix-loop` until materially clean, perform the `handoff`
+   checks above, update the item, and move it to `in_review`.
 
-## Review Until Clean
-
-Run `$brutal-inf-fix-loop` against this exact open pull request in the same
-worktree. Reuse the managed integrations and canonical local work-store root.
-Do not impose a pass, time, token, cost, commit, or no-progress limit. Relay
-each pass result to the swarm when one exists.
-
-After a fresh review returns `validated_finding_count: 0`:
-
-1. Re-run required verification for the final head.
-2. Update the task with changed files, commands/results, commits, branch, pull
-   request, stack base, clean review id, and residual risks.
-3. Move the task to `in_review` and return a structured result containing task,
-   branch, base, pull request, local and remote head, verification, review id,
-   and `cleanup_eligible: true`.
-
-On a hard source-skill guard or user interruption, add an exact `BLOCKED:` or
-`CANCELED:` record, leave the task in `in_progress`, preserve the worktree, and
-return the remaining review occurrences and recovery state. Never call that
-result clean.
-
-When running under tmux, always return the structured result expected by the
-supervisor. Do not kill, rename, or clean up the containing session.
+Redirect verbose builds, tests, diffs, and provider output to run-local
+temporary logs. Report command status and duration. On failure, include only
+the last 200 lines or 16 KiB, whichever is smaller.

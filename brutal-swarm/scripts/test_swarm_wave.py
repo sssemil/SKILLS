@@ -54,7 +54,34 @@ def opened(branch, *, clean=True):
     }
 
 
+def materially_clean(branch):
+    return {
+        **opened(branch, clean=False),
+        "review_gate": "materially_clean",
+    }
+
+
 class NormalizeGraphTests(unittest.TestCase):
+    def test_normalizes_coordination_and_registry(self):
+        payload = graph(
+            [
+                task(
+                    "A",
+                    decisions_owned=[{"id": "api.shape", "statement": "Use JSON"}],
+                    decisions_consumed=[],
+                    touch_surfaces=[
+                        {"path": "src/api", "kind": "prefix", "parallel_safe": False}
+                    ],
+                )
+            ]
+        )
+        payload["decision_registry"] = [
+            {"id": "repo.layout", "statement": "Use src directories"}
+        ]
+        normalized = swarm_wave.normalize_graph(payload)
+        self.assertEqual(normalized["decision_registry"][0]["id"], "repo.layout")
+        self.assertFalse(normalized["tasks"][0]["coordination_unscoped"])
+
     def test_normalizes_order_alias_head_and_owned_user(self):
         payload = graph(
             [
@@ -91,6 +118,7 @@ class NormalizeGraphTests(unittest.TestCase):
             (graph([task("A", blockers=["A"])]), "own ref"),
             (graph([task("A", pr={"state": "open", "needs_reconcile": "yes"})]), "needs_reconcile"),
             (graph([task("A", pr={"state": "unknown"})]), "pr.state"),
+            (graph([task("A", pr={"state": "open", "review_gate": "maybe"})]), "review_gate"),
         ]
         for payload, message in invalid:
             with self.subTest(message=message):
@@ -123,6 +151,72 @@ class NormalizeGraphTests(unittest.TestCase):
 
 
 class SelectWaveTests(unittest.TestCase):
+    def test_duplicate_decision_owners_hold_every_owner(self):
+        decision = [{"id": "api.shape", "statement": "Use JSON"}]
+        result = swarm_wave.select_wave(
+            graph(
+                [
+                    task("A", decisions_owned=decision),
+                    task("B", decisions_owned=decision),
+                ]
+            )
+        )
+        self.assertEqual(result["selected"], [])
+        self.assertEqual(
+            {item["reason"] for item in result["held"]},
+            {"decision_domain_conflict"},
+        )
+
+    def test_consumed_decision_requires_registry_or_ancestor_owner(self):
+        result = swarm_wave.select_wave(
+            graph([task("A", decisions_consumed=["api.shape"])])
+        )
+        self.assertEqual(result["held"][0]["reason"], "unresolved_consumed_decision")
+
+        payload = graph([task("A", decisions_consumed=["api.shape"])])
+        payload["decision_registry"] = [
+            {"id": "api.shape", "statement": "Use JSON"}
+        ]
+        self.assertEqual([item["ref"] for item in swarm_wave.select_wave(payload)["selected"]], ["A"])
+
+    def test_overlapping_touch_surfaces_serialize_deterministically(self):
+        unsafe = [{"path": "src/api", "kind": "prefix", "parallel_safe": False}]
+        result = swarm_wave.select_wave(
+            graph(
+                [
+                    task("A", touch_surfaces=unsafe),
+                    task(
+                        "B",
+                        touch_surfaces=[
+                            {
+                                "path": "src/api/routes.rs",
+                                "kind": "file",
+                                "parallel_safe": False,
+                            }
+                        ],
+                    ),
+                ]
+            )
+        )
+        self.assertEqual([item["ref"] for item in result["selected"]], ["A"])
+        held = next(item for item in result["held"] if item["ref"] == "B")
+        self.assertEqual(held["reason"], "touch_surface_conflict")
+        self.assertEqual(held["conflicts_with"], ["A"])
+
+    def test_both_parallel_safe_surfaces_may_overlap(self):
+        safe = [{"path": "docs", "kind": "prefix", "parallel_safe": True}]
+        result = swarm_wave.select_wave(
+            graph([task("A", touch_surfaces=safe), task("B", touch_surfaces=safe)])
+        )
+        self.assertEqual([item["ref"] for item in result["selected"]], ["A", "B"])
+
+    def test_legacy_tasks_run_but_are_reported_unscoped(self):
+        result = swarm_wave.select_wave(graph([task("A")]))
+        self.assertTrue(result["selected"][0]["coordination_unscoped"])
+        self.assertEqual(
+            result["warnings"], [{"ref": "A", "reason": "coordination_unscoped"}]
+        )
+
     def test_independent_roots_are_deterministic_and_limited(self):
         result = swarm_wave.select_wave(graph([task("C"), task("A"), task("B")], limit=2))
         self.assertEqual([item["ref"] for item in result["selected"]], ["A", "B"])
@@ -151,6 +245,27 @@ class SelectWaveTests(unittest.TestCase):
             ("brutal/a", "brutal/a-sha", "A"),
         )
         self.assertEqual(result["held"][0]["reason"], "awaiting_review")
+
+    def test_materially_clean_blocker_is_stack_ready(self):
+        result = swarm_wave.select_wave(
+            graph(
+                [
+                    task("A", state="in_review", pr=materially_clean("brutal/a")),
+                    task("B", blockers=["A"]),
+                ]
+            )
+        )
+        selected = next(item for item in result["selected"] if item["ref"] == "B")
+        self.assertEqual(selected["stacked_on"], "A")
+
+    def test_explicit_not_ready_gate_overrides_legacy_clean_flag(self):
+        parent = opened("brutal/a", clean=True)
+        parent["review_gate"] = "not_ready"
+        result = swarm_wave.select_wave(
+            graph([task("A", state="in_review", pr=parent), task("B", blockers=["A"])])
+        )
+        held = next(item for item in result["held"] if item["ref"] == "B")
+        self.assertEqual(held["reason"], "blocker_pr_not_clean")
 
     def test_done_and_merged_blockers_are_satisfied(self):
         result = swarm_wave.select_wave(

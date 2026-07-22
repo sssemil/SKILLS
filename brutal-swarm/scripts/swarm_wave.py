@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Sequence
 
 
@@ -15,6 +16,9 @@ TASK_STATES = frozenset(
     {"todo", "in_progress", "in_review", "done", "canceled"}
 )
 PR_STATES = frozenset({"open", "closed", "merged"})
+REVIEW_GATES = frozenset({"not_ready", "zero_findings", "materially_clean"})
+STACK_READY_REVIEW_GATES = frozenset({"zero_findings", "materially_clean"})
+DECISION_ID = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
 
 class InputError(ValueError):
@@ -69,6 +73,14 @@ def _normalize_pr(value: Any, path: str) -> dict[str, Any] | None:
             raise InputError(f"{path}.clean must be a boolean")
         clean = clean_value
 
+    review_gate_value = pr.get("review_gate")
+    review_gate = None
+    if review_gate_value is not None:
+        review_gate = _string(review_gate_value, f"{path}.review_gate").lower()
+        if review_gate not in REVIEW_GATES:
+            expected = ", ".join(sorted(REVIEW_GATES))
+            raise InputError(f"{path}.review_gate must be one of: {expected}")
+
     normalized: dict[str, Any] = {
         "state": state,
         "branch": _optional_string(pr.get("branch"), f"{path}.branch"),
@@ -77,6 +89,7 @@ def _normalize_pr(value: Any, path: str) -> dict[str, Any] | None:
         ),
         "head_sha": _optional_string(pr.get("head_sha"), f"{path}.head_sha"),
         "clean": clean,
+        "review_gate": review_gate,
         "needs_reconcile": _optional_bool(
             pr.get("needs_reconcile"), f"{path}.needs_reconcile"
         ),
@@ -95,6 +108,109 @@ def _normalize_order_key(value: Any, path: str) -> str | int:
     if isinstance(value, str):
         return _string(value, path)
     return value
+
+
+def _normalize_decision_id(value: Any, path: str) -> str:
+    decision_id = _string(value, path)
+    if not DECISION_ID.fullmatch(decision_id):
+        raise InputError(f"{path} must match {DECISION_ID.pattern}")
+    return decision_id
+
+
+def _normalize_coordination(task: Mapping[str, Any], path: str) -> tuple[dict[str, Any], bool]:
+    nested = task.get("coordination")
+    if nested is not None and not isinstance(nested, Mapping):
+        raise InputError(f"{path}.coordination must be an object")
+    source = nested if isinstance(nested, Mapping) else task
+    fields = ("decisions_owned", "decisions_consumed", "touch_surfaces")
+    scoped = nested is not None or any(field in task for field in fields)
+    values = [source.get(field, []) for field in fields]
+    if not all(isinstance(value, list) for value in values):
+        raise InputError(f"{path} coordination fields must be arrays")
+    owned: list[dict[str, str]] = []
+    for index, raw in enumerate(values[0]):
+        item = _object(raw, f"{path}.decisions_owned[{index}]")
+        if set(item) != {"id", "statement"}:
+            raise InputError(
+                f"{path}.decisions_owned[{index}] requires only id and statement"
+            )
+        owned.append(
+            {
+                "id": _normalize_decision_id(
+                    item.get("id"), f"{path}.decisions_owned[{index}].id"
+                ),
+                "statement": _string(
+                    item.get("statement"),
+                    f"{path}.decisions_owned[{index}].statement",
+                ),
+            }
+        )
+    consumed = [
+        _normalize_decision_id(raw, f"{path}.decisions_consumed[{index}]")
+        for index, raw in enumerate(values[1])
+    ]
+    surfaces: list[dict[str, Any]] = []
+    for index, raw in enumerate(values[2]):
+        item = _object(raw, f"{path}.touch_surfaces[{index}]")
+        if set(item) != {"path", "kind", "parallel_safe"}:
+            raise InputError(
+                f"{path}.touch_surfaces[{index}] requires path, kind, parallel_safe"
+            )
+        raw_path = _string(item.get("path"), f"{path}.touch_surfaces[{index}].path")
+        surface_path = PurePosixPath(raw_path)
+        if (
+            surface_path.is_absolute()
+            or ".." in surface_path.parts
+            or surface_path.as_posix() in {"", "."}
+        ):
+            raise InputError(
+                f"{path}.touch_surfaces[{index}].path must be repository-relative"
+            )
+        kind = _string(item.get("kind"), f"{path}.touch_surfaces[{index}].kind")
+        if kind not in {"file", "prefix"}:
+            raise InputError(f"{path}.touch_surfaces[{index}].kind is invalid")
+        surfaces.append(
+            {
+                "path": surface_path.as_posix().rstrip("/"),
+                "kind": kind,
+                "parallel_safe": _optional_bool(
+                    item.get("parallel_safe"),
+                    f"{path}.touch_surfaces[{index}].parallel_safe",
+                ),
+            }
+        )
+    owned_ids = [item["id"] for item in owned]
+    if len(owned_ids) != len(set(owned_ids)) or len(consumed) != len(set(consumed)):
+        raise InputError(f"{path} coordination contains duplicate decision IDs")
+    return {
+        "decisions_owned": sorted(owned, key=lambda item: item["id"]),
+        "decisions_consumed": sorted(consumed),
+        "touch_surfaces": sorted(surfaces, key=lambda item: (item["path"], item["kind"])),
+    }, not scoped
+
+
+def _normalize_decision_registry(value: Any) -> list[dict[str, str]]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise InputError("decision_registry must be an array")
+    decisions: list[dict[str, str]] = []
+    for index, raw in enumerate(value):
+        item = _object(raw, f"decision_registry[{index}]")
+        if set(item) != {"id", "statement"}:
+            raise InputError(f"decision_registry[{index}] requires only id and statement")
+        decisions.append(
+            {
+                "id": _normalize_decision_id(item.get("id"), f"decision_registry[{index}].id"),
+                "statement": _string(
+                    item.get("statement"), f"decision_registry[{index}].statement"
+                ),
+            }
+        )
+    ids = [item["id"] for item in decisions]
+    if len(ids) != len(set(ids)):
+        raise InputError("decision_registry contains duplicate IDs")
+    return sorted(decisions, key=lambda item: item["id"])
 
 
 def _order_sort_key(value: str | int) -> tuple[int, str | int]:
@@ -169,6 +285,7 @@ def _normalize_task(value: Any, index: int) -> dict[str, Any]:
             raise InputError(f"{path}.{field} is required")
         return _optional_bool(task[field], f"{path}.{field}")
 
+    coordination, coordination_unscoped = _normalize_coordination(task, path)
     return {
         "ref": ref,
         "kind": task_type,
@@ -185,6 +302,8 @@ def _normalize_task(value: Any, index: int) -> dict[str, Any]:
         ),
         "base_sha": _optional_string(task.get("base_sha"), f"{path}.base_sha"),
         "pr": _normalize_pr(task.get("pr"), f"{path}.pr"),
+        "coordination": coordination,
+        "coordination_unscoped": coordination_unscoped,
     }
 
 
@@ -218,12 +337,46 @@ def normalize_graph(payload: Any) -> dict[str, Any]:
     return {
         "root_base": root_base,
         "limit": limit_value,
+        "decision_registry": _normalize_decision_registry(data.get("decision_registry")),
         "tasks": sorted(
             tasks,
             key=lambda task: (_order_sort_key(task["order_key"]), task["ref"]),
         ),
         "cycle_refs": sorted(_dependency_cycle_refs(tasks)),
     }
+
+
+def _ancestor_refs(ref: str, by_ref: Mapping[str, Mapping[str, Any]]) -> set[str]:
+    found: set[str] = set()
+    pending = list(by_ref[ref]["blockers"])
+    while pending:
+        blocker = pending.pop()
+        if blocker in found:
+            continue
+        found.add(blocker)
+        if blocker in by_ref:
+            pending.extend(by_ref[blocker]["blockers"])
+    return found
+
+
+def _surfaces_overlap(left: Mapping[str, Any], right: Mapping[str, Any]) -> bool:
+    if left["parallel_safe"] and right["parallel_safe"]:
+        return False
+    left_path = left["path"]
+    right_path = right["path"]
+    if left["kind"] == "file" and right["kind"] == "file":
+        return left_path == right_path
+    if left["kind"] == "prefix" and right["kind"] == "prefix":
+        return (
+            left_path == right_path
+            or left_path.startswith(right_path + "/")
+            or right_path.startswith(left_path + "/")
+        )
+    prefix = left if left["kind"] == "prefix" else right
+    file_surface = right if left["kind"] == "prefix" else left
+    return file_surface["path"] == prefix["path"] or file_surface["path"].startswith(
+        prefix["path"] + "/"
+    )
 
 
 def _validate_limit(value: Any) -> int:
@@ -279,7 +432,12 @@ def _blocker_base(
         return None, "blocker_pr_closed", unresolved_refs
     if pr["state"] != "open":
         return None, "blocker_not_ready", unresolved_refs
-    if pr["clean"] is not True:
+    review_ready = (
+        pr["review_gate"] in STACK_READY_REVIEW_GATES
+        if pr["review_gate"] is not None
+        else pr["clean"] is True
+    )
+    if not review_ready:
         return None, "blocker_pr_not_clean", unresolved_refs
     if pr["branch"] is None or pr["head_sha"] is None:
         return None, "blocker_pr_head_missing", unresolved_refs
@@ -361,12 +519,28 @@ def select_wave(payload: Any, limit: int | None = None) -> dict[str, Any]:
         raise InputError("limit is required in input or as --limit")
 
     by_ref = {task["ref"]: task for task in graph["tasks"]}
+    registry_ids = {item["id"] for item in graph["decision_registry"]}
+    owners: dict[str, list[str]] = {}
+    for task in graph["tasks"]:
+        if task["state"] in {"done", "canceled"}:
+            continue
+        for decision in task["coordination"]["decisions_owned"]:
+            owners.setdefault(decision["id"], []).append(task["ref"])
+    conflicted_owners = {
+        ref: decision_id
+        for decision_id, refs in owners.items()
+        if len(refs) > 1
+        for ref in refs
+    }
     candidates: list[
-        tuple[int, int, tuple[int, str | int], str, dict[str, Any]]
+        tuple[int, int, tuple[int, str | int], str, dict[str, Any], Mapping[str, Any]]
     ] = []
     held: list[dict[str, Any]] = []
+    warnings: list[dict[str, str]] = []
 
     for task in graph["tasks"]:
+        if task["coordination_unscoped"]:
+            warnings.append({"ref": task["ref"], "reason": "coordination_unscoped"})
         if task["ref"] in graph["cycle_refs"]:
             held.append(
                 {
@@ -374,6 +548,43 @@ def select_wave(payload: Any, limit: int | None = None) -> dict[str, Any]:
                     "kind": task["kind"],
                     "state": task["state"],
                     "reason": "dependency_cycle",
+                }
+            )
+            continue
+        if task["ref"] in conflicted_owners:
+            decision_id = conflicted_owners[task["ref"]]
+            held.append(
+                {
+                    "ref": task["ref"],
+                    "kind": task["kind"],
+                    "state": task["state"],
+                    "reason": "decision_domain_conflict",
+                    "decision_id": decision_id,
+                    "conflicts_with": sorted(
+                        ref for ref in owners[decision_id] if ref != task["ref"]
+                    ),
+                }
+            )
+            continue
+        ancestor_decisions = {
+            decision["id"]
+            for ancestor in _ancestor_refs(task["ref"], by_ref)
+            if ancestor in by_ref
+            for decision in by_ref[ancestor]["coordination"]["decisions_owned"]
+        }
+        unresolved = sorted(
+            set(task["coordination"]["decisions_consumed"])
+            - registry_ids
+            - ancestor_decisions
+        )
+        if unresolved:
+            held.append(
+                {
+                    "ref": task["ref"],
+                    "kind": task["kind"],
+                    "state": task["state"],
+                    "reason": "unresolved_consumed_decision",
+                    "decision_ids": unresolved,
                 }
             )
             continue
@@ -395,6 +606,8 @@ def select_wave(payload: Any, limit: int | None = None) -> dict[str, Any]:
             "ref": task["ref"],
             "kind": task["kind"],
             "state": task["state"],
+            "coordination": task["coordination"],
+            "coordination_unscoped": task["coordination_unscoped"],
             **assignment,
         }
         task_priority = (
@@ -407,20 +620,45 @@ def select_wave(payload: Any, limit: int | None = None) -> dict[str, Any]:
                 _order_sort_key(task["order_key"]),
                 task["ref"],
                 selected,
+                task,
             )
         )
 
     candidates.sort(key=lambda item: item[:4])
-    selected = [item[4] for item in candidates[:effective_limit]]
-    for _, _, _, _, assignment in candidates[effective_limit:]:
-        held.append(
-            {
-                "ref": assignment["ref"],
-                "kind": assignment["kind"],
-                "state": assignment["state"],
-                "reason": "concurrency_limit",
-            }
-        )
+    selected: list[dict[str, Any]] = []
+    selected_tasks: list[Mapping[str, Any]] = []
+    for _, _, _, _, assignment, task in candidates:
+        conflict_ref: str | None = None
+        for selected_task in selected_tasks:
+            if any(
+                _surfaces_overlap(left, right)
+                for left in task["coordination"]["touch_surfaces"]
+                for right in selected_task["coordination"]["touch_surfaces"]
+            ):
+                conflict_ref = selected_task["ref"]
+                break
+        if conflict_ref is not None:
+            held.append(
+                {
+                    "ref": assignment["ref"],
+                    "kind": assignment["kind"],
+                    "state": assignment["state"],
+                    "reason": "touch_surface_conflict",
+                    "conflicts_with": [conflict_ref],
+                }
+            )
+        elif len(selected) >= effective_limit:
+            held.append(
+                {
+                    "ref": assignment["ref"],
+                    "kind": assignment["kind"],
+                    "state": assignment["state"],
+                    "reason": "concurrency_limit",
+                }
+            )
+        else:
+            selected.append(assignment)
+            selected_tasks.append(task)
     held.sort(key=lambda item: item["ref"])
 
     return {
@@ -428,6 +666,7 @@ def select_wave(payload: Any, limit: int | None = None) -> dict[str, Any]:
         "limit": effective_limit,
         "selected": selected,
         "held": held,
+        "warnings": sorted(warnings, key=lambda item: item["ref"]),
     }
 
 

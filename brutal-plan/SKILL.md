@@ -40,6 +40,10 @@ investigation map.
    cohesive scope: delivered outcome and genuine blockers. Obtain explicit
    approval of scope boundaries, granularity, blocking edges, and coverage.
    Show complete ticket bodies only when the user asks for them.
+   Build the immutable plan decision registry from the approved specification
+   and ticket `Decisions Owned` sections. Reject duplicate owners or statement
+   drift. For swarm execution, follow
+   `../brutal-swarm/references/compositional-harness.md`.
 4. Publish only after both gates pass. A rejection or unresolved decision leaves
    all work-store artifacts and domain documents unchanged.
 
