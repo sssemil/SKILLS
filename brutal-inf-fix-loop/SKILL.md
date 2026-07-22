@@ -29,7 +29,7 @@ provider rules.
 - Do not impose a pass, elapsed-time, token, cost, commit, or no-progress limit.
 - A hard source-skill guard stops `blocked`; user interruption stops `canceled`.
 
-## Managed Tmux Mode
+## Managed Phase Mode
 
 Do not run the whole loop inside one Codex thread. Obey the supervisor's phase
 snapshot and perform only that phase:

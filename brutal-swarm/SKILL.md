@@ -1,6 +1,6 @@
 ---
 name: brutal-swarm
-description: Drain a BRUTAL.md task graph through parallel isolated workers and stacked pull requests. Managed tmux workers use append-only phase attempts and fresh Codex threads to avoid carrying implementation context through every review/fix pass.
+description: Drain a BRUTAL.md task graph through parallel isolated workers and stacked pull requests. Managed workers use append-only phases with fresh execution context.
 ---
 
 # Brutal Swarm
@@ -54,7 +54,7 @@ For tmux, count only live panes toward the concurrency cap. Retained dead panes
 occupy no slot. When a pane returns a valid zero-exit checkpoint, revalidate the
 task, ownership, PR, branch/base/head, and checks; write a mutable phase
 snapshot; then call `tmux_worker.py advance` with the active attempt id and
-checkpoint digest. The controller derives the next phase. Never resume a
+revalidated snapshot. The controller derives the next phase. Never resume a
 completed checkpoint or reuse its Codex thread across phases.
 
 Prioritize an interrupted same-phase resume before new work, still within the

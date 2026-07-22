@@ -379,7 +379,6 @@ class TmuxWorkerTest(unittest.TestCase):
             **self.common(),
             phase_snapshot=self.phase_snapshot(base_sha=advanced_base),
             expected_attempt_id="000001",
-            expected_checkpoint_digest=work["checkpoint_digest"],
             revalidated=True,
             codex_bin=str(self.fake_codex),
         )
@@ -397,7 +396,6 @@ class TmuxWorkerTest(unittest.TestCase):
             **self.common(),
             phase_snapshot=self.phase_snapshot(),
             expected_attempt_id="000002",
-            expected_checkpoint_digest=review["checkpoint_digest"],
             revalidated=True,
             codex_bin=str(self.fake_codex),
         )
@@ -450,7 +448,6 @@ class TmuxWorkerTest(unittest.TestCase):
             **self.common(),
             phase_snapshot=self.phase_snapshot(test_scenario="material"),
             expected_attempt_id="000001",
-            expected_checkpoint_digest=work["checkpoint_digest"],
             revalidated=True,
             codex_bin=str(self.fake_codex),
         )
@@ -462,7 +459,6 @@ class TmuxWorkerTest(unittest.TestCase):
             **self.common(),
             phase_snapshot=self.phase_snapshot(),
             expected_attempt_id="000002",
-            expected_checkpoint_digest=review["checkpoint_digest"],
             revalidated=True,
             codex_bin=str(self.fake_codex),
         )
@@ -472,28 +468,18 @@ class TmuxWorkerTest(unittest.TestCase):
                 **self.common(),
                 phase_snapshot=self.phase_snapshot(),
                 expected_attempt_id="000002",
-                expected_checkpoint_digest=review["checkpoint_digest"],
                 revalidated=True,
                 codex_bin=str(self.fake_codex),
             )
 
-    def test_managed_advance_requires_zero_exit_and_exact_checkpoint_digest(self) -> None:
+    def test_managed_advance_requires_zero_exit(self) -> None:
         launched = tmux_worker.launch_worker(
             **self.common(),
             prompt="ignored",
             handoff=self.managed_handoff(),
             codex_bin=str(self.fake_codex),
         )
-        work = self.wait_dead()
-        with self.assertRaisesRegex(tmux_worker.TmuxWorkerError, "stale checkpoint digest"):
-            tmux_worker.advance_worker(
-                **self.common(),
-                phase_snapshot=self.phase_snapshot(),
-                expected_attempt_id="000001",
-                expected_checkpoint_digest="0" * 64,
-                revalidated=True,
-                codex_bin=str(self.fake_codex),
-            )
+        self.wait_dead()
         state_dir = Path(str(launched["state_dir"]))
         (state_dir / "attempts" / "000001" / "exit.json").unlink()
         with self.assertRaisesRegex(tmux_worker.TmuxWorkerError, "completed zero exit"):
@@ -501,7 +487,6 @@ class TmuxWorkerTest(unittest.TestCase):
                 **self.common(),
                 phase_snapshot=self.phase_snapshot(),
                 expected_attempt_id="000001",
-                expected_checkpoint_digest=work["checkpoint_digest"],
                 revalidated=True,
                 codex_bin=str(self.fake_codex),
             )
@@ -521,13 +506,11 @@ class TmuxWorkerTest(unittest.TestCase):
         result_path.write_text(json.dumps(result), encoding="utf-8")
         inspected = self.inspect()
         self.assertEqual(inspected["result"]["status"], "failed")
-        self.assertIsNone(inspected["checkpoint_digest"])
         with self.assertRaisesRegex(tmux_worker.TmuxWorkerError, "advanceable checkpoint"):
             tmux_worker.advance_worker(
                 **self.common(),
                 phase_snapshot=self.phase_snapshot(),
                 expected_attempt_id="000001",
-                expected_checkpoint_digest=completed["checkpoint_digest"],
                 revalidated=True,
                 codex_bin=str(self.fake_codex),
             )
@@ -549,7 +532,6 @@ class TmuxWorkerTest(unittest.TestCase):
                     **self.common(),
                     phase_snapshot=self.phase_snapshot(),
                     expected_attempt_id="000001",
-                    expected_checkpoint_digest=completed["checkpoint_digest"],
                     revalidated=True,
                     codex_bin=str(self.fake_codex),
                 )
