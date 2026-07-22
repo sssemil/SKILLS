@@ -33,6 +33,14 @@ class ScopedEditTest(unittest.TestCase):
         self.repo = self.root / "repo"
         (self.repo / "src" / "api").mkdir(parents=True)
         subprocess.run(["git", "-C", str(self.repo), "init"], check=True, capture_output=True)
+        subprocess.run(
+            [
+                "git", "-C", str(self.repo), "-c", "user.name=Test",
+                "-c", "user.email=test@example.invalid", "commit", "--allow-empty", "-m", "init",
+            ],
+            check=True,
+            capture_output=True,
+        )
         self.command = self.root / "safe-codex-test"
         self.command.write_text(FAKE)
         self.command.chmod(self.command.stat().st_mode | stat.S_IXUSR)
@@ -40,12 +48,7 @@ class ScopedEditTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
-    def test_extracts_and_validates_writable_directory(self) -> None:
-        self.assertEqual(
-            scoped_edit.writable_directory("# Task\n\n## Writable Directory\n`src/api`\n"),
-            "src/api",
-        )
-        self.assertIsNone(scoped_edit.writable_directory("# Task\n"))
+    def test_validates_writable_directory(self) -> None:
         for value in ("/tmp", "../src", "missing"):
             with self.subTest(value=value), self.assertRaises(scoped_edit.ScopedEditError):
                 scoped_edit.resolve_directory(self.repo, value)

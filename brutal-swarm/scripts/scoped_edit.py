@@ -16,21 +16,6 @@ class ScopedEditError(RuntimeError):
     """Raised when the requested write boundary is invalid or violated."""
 
 
-def writable_directory(ticket: str) -> str | None:
-    lines = ticket.splitlines()
-    for index, line in enumerate(lines):
-        if line.strip().lower() != "## writable directory":
-            continue
-        for value in lines[index + 1 :]:
-            value = value.strip()
-            if value.startswith("## "):
-                break
-            if value:
-                return value.strip("`")
-        raise ScopedEditError("Writable Directory heading has no value")
-    return None
-
-
 def resolve_directory(repository: Path, value: str) -> Path:
     relative = PurePosixPath(value)
     if relative.is_absolute() or ".." in relative.parts or value.strip() == "":
@@ -57,23 +42,9 @@ def _git(repository: Path, *args: str) -> bytes:
 
 
 def _changed_paths(repository: Path) -> set[str]:
-    raw = _git(repository, "status", "--porcelain=v1", "-z", "--untracked-files=all")
-    entries = raw.decode(errors="surrogateescape").split("\0")
-    paths: set[str] = set()
-    skip_rename_source = False
-    for entry in entries:
-        if not entry:
-            continue
-        if skip_rename_source:
-            paths.add(entry)
-            skip_rename_source = False
-            continue
-        if len(entry) < 4:
-            continue
-        status, path = entry[:2], entry[3:]
-        paths.add(path)
-        skip_rename_source = "R" in status or "C" in status
-    return paths
+    raw = _git(repository, "diff", "--name-only", "-z", "HEAD")
+    raw += _git(repository, "ls-files", "--others", "--exclude-standard", "-z")
+    return {path for path in raw.decode(errors="surrogateescape").split("\0") if path}
 
 
 def _inside(path: str, allowed: Path, repository: Path) -> bool:
