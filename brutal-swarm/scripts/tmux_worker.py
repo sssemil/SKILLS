@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -13,18 +14,18 @@ import shutil
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Mapping, Sequence
-
+from typing import Any, Iterator, Mapping, Sequence
 
 class TmuxWorkerError(RuntimeError):
     """A user-actionable worker identity, runtime, or process error."""
 
 
-RESULT_SCHEMA: dict[str, Any] = {
+LEGACY_RESULT_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "additionalProperties": True,
+    "additionalProperties": False,
     "required": ["status", "task_ref", "summary"],
     "properties": {
         "status": {
@@ -35,6 +36,177 @@ RESULT_SCHEMA: dict[str, Any] = {
         "summary": {"type": "string"},
     },
 }
+
+_PHASES = ("work", "review", "fix", "handoff", "complete")
+_CHECKPOINT_PHASES = ("work", "review", "fix")
+_TERMINAL_STATUSES = ("clean", "blocked", "canceled", "claim_lost", "failed")
+
+_COMMON_MANAGED_PROPERTIES: dict[str, Any] = {
+    "schema_version": {"const": 2},
+    "task_ref": {"type": "string", "minLength": 1},
+    "summary": {"type": "string"},
+    "phase": {"type": "string", "enum": list(_PHASES)},
+    "attempt_id": {"type": "string", "pattern": r"^[0-9]{6}$"},
+}
+
+_FINDING_COUNTS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["CRITICAL", "MAJOR", "MINOR", "NIT"],
+    "properties": {
+        severity: {"type": "integer", "minimum": 0}
+        for severity in ("CRITICAL", "MAJOR", "MINOR", "NIT")
+    },
+}
+
+_CHECKPOINT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "branch",
+        "head_sha",
+        "base_branch",
+        "base_sha",
+        "pull_request",
+        "verification_head",
+        "verification_summary",
+        "review_id",
+        "findings_by_severity",
+        "queued_finding_count",
+        "unhandled_finding_count",
+        "summary_posted",
+        "residual_findings",
+    ],
+    "properties": {
+        "branch": {"type": "string", "minLength": 1},
+        "head_sha": {"type": "string", "minLength": 1},
+        "base_branch": {"type": "string", "minLength": 1},
+        "base_sha": {"type": "string", "minLength": 1},
+        "pull_request": {"type": ["string", "null"]},
+        "verification_head": {"type": ["string", "null"]},
+        "verification_summary": {"type": "string"},
+        "review_id": {"type": ["string", "null"]},
+        "findings_by_severity": _FINDING_COUNTS_SCHEMA,
+        "queued_finding_count": {"type": "integer", "minimum": 0},
+        "unhandled_finding_count": {"type": "integer", "minimum": 0},
+        "summary_posted": {"type": "boolean"},
+        "residual_findings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["fingerprint", "severity", "summary"],
+                "properties": {
+                    "fingerprint": {"type": "string", "minLength": 1},
+                    "severity": {"enum": ["MINOR", "NIT"]},
+                    "summary": {"type": "string", "minLength": 1},
+                    "location": {"type": ["string", "null"]},
+                },
+            },
+        },
+    },
+}
+
+def _managed_variant(status: str, extra: Mapping[str, Any]) -> dict[str, Any]:
+    properties = {**_COMMON_MANAGED_PROPERTIES, "status": {"const": status}, **extra}
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": list(properties),
+        "properties": properties,
+    }
+
+
+MANAGED_RESULT_SCHEMA: dict[str, Any] = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+        {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["schema_version", "status", "task_ref", "summary"],
+            "properties": {
+                "schema_version": {"const": 2},
+                "status": {"const": "progress"},
+                "task_ref": {"type": "string", "minLength": 1},
+                "summary": {"type": "string"},
+            },
+        },
+        _managed_variant("checkpoint", {"checkpoint": _CHECKPOINT_SCHEMA}),
+        _managed_variant(
+            "clean",
+            {
+                "completion_kind": {
+                    "enum": ["zero_findings", "materially_clean", "merged"]
+                },
+                "cleanup_eligible": {"type": "boolean"},
+                "result": _CHECKPOINT_SCHEMA,
+            },
+        ),
+        *[
+            _managed_variant(status, {"blocker": {"type": ["string", "null"]}})
+            for status in ("blocked", "canceled", "claim_lost", "failed")
+        ],
+    ],
+}
+
+
+def _managed_phase_variant(
+    phase: str, status: str | Mapping[str, Any], extra: Mapping[str, Any]
+) -> dict[str, Any]:
+    properties = {
+        **_COMMON_MANAGED_PROPERTIES,
+        "phase": {"const": phase},
+        "status": {"const": status} if isinstance(status, str) else dict(status),
+        **extra,
+    }
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": list(properties),
+        "properties": properties,
+    }
+
+
+def _managed_result_schema(phase: str) -> dict[str, Any]:
+    if phase not in _PHASES:
+        raise TmuxWorkerError(f"unknown managed phase: {phase}")
+    variants: list[dict[str, Any]] = []
+    if phase in _CHECKPOINT_PHASES:
+        variants.append(
+            _managed_phase_variant(
+                phase, "checkpoint", {"checkpoint": _CHECKPOINT_SCHEMA}
+            )
+        )
+    else:
+        completion_kinds = (
+            ["merged"] if phase == "complete" else ["zero_findings", "materially_clean"]
+        )
+        variants.append(
+            _managed_phase_variant(
+                phase,
+                "clean",
+                {
+                    "completion_kind": {"enum": completion_kinds},
+                    "cleanup_eligible": {"type": "boolean"},
+                    "result": _CHECKPOINT_SCHEMA,
+                },
+            )
+        )
+    variants.append(
+        _managed_phase_variant(
+            phase,
+            {"enum": ["blocked", "canceled", "claim_lost", "failed"]},
+            {"blocker": {"type": ["string", "null"]}},
+        )
+    )
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": variants,
+    }
+
+
+# Backward-compatible name for callers that import the original constant.
+RESULT_SCHEMA = LEGACY_RESULT_SCHEMA
 
 _TMUX_METADATA = {
     "repository": "@brutal_repository",
@@ -228,9 +400,227 @@ def _state_dir(primary: Path, repository: str, task_ref: str) -> Path:
 
 
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    os.replace(temporary, path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.{time.time_ns()}.tmp")
+    try:
+        temporary.write_text(
+            json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _read_json(path: Path) -> dict[str, Any] | None:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _json_digest(value: Mapping[str, Any]) -> str:
+    raw = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _is_managed(manifest: Mapping[str, Any]) -> bool:
+    return manifest.get("version") == 2 and isinstance(manifest.get("handoff"), Mapping)
+
+
+def _attempt_id(number: int) -> str:
+    return f"{number:06d}"
+
+
+def _attempt_dir(state_dir: Path, attempt_id: str) -> Path:
+    return state_dir / "attempts" / attempt_id
+
+
+def _active_attempt(state_dir: Path) -> dict[str, Any]:
+    active = _read_json(state_dir / "active.json")
+    if active is None:
+        raise TmuxWorkerError("managed worker has no active attempt")
+    attempt_id = active.get("attempt_id")
+    phase = active.get("phase")
+    if (
+        not isinstance(attempt_id, str)
+        or not re.fullmatch(r"[0-9]{6}", attempt_id)
+        or phase not in _PHASES
+    ):
+        raise TmuxWorkerError("managed worker active attempt is malformed")
+    return active
+
+
+@contextmanager
+def _transition_lock(state_dir: Path) -> Iterator[None]:
+    lock_path = state_dir / "transition.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+", encoding="utf-8") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise TmuxWorkerError("another worker transition is already in progress") from exc
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _initial_phase(handoff: Mapping[str, Any]) -> str:
+    phase = handoff.get("phase", "work")
+    if phase not in {"work", "review", "fix", "complete"}:
+        raise TmuxWorkerError(
+            "managed handoff phase must be work, review, fix, or complete"
+        )
+    return str(phase)
+
+
+def _phase_snapshot(
+    manifest: Mapping[str, Any],
+    phase: str,
+    attempt_id: str,
+    *,
+    live: Mapping[str, Any],
+    parent_attempt_id: str | None,
+) -> dict[str, Any]:
+    handoff = manifest.get("handoff")
+    assert isinstance(handoff, Mapping)
+    return {
+        "schema_version": 1,
+        "phase": phase,
+        "attempt_id": attempt_id,
+        "parent_attempt_id": parent_attempt_id,
+        "identity": {
+            "task_ref": manifest["task_ref"],
+            "branch": manifest["branch"],
+            "worktree_path": manifest["worktree"],
+            "code_host_repository": manifest["repository"],
+        },
+        "live": dict(live),
+    }
+
+
+def _initial_live_snapshot(handoff: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "task_state": handoff.get("task_state"),
+        "task_owner": handoff.get("task_owner"),
+        "branch_head": handoff.get("branch_head"),
+        "base_branch": handoff.get("base_branch"),
+        "base_sha": handoff.get("base_sha"),
+        "pull_request": handoff.get("pull_request"),
+        "checks": handoff.get("checks"),
+    }
+
+
+def _validate_live_snapshot(
+    snapshot: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> dict[str, Any]:
+    if snapshot.get("schema_version") != 1:
+        raise TmuxWorkerError("phase snapshot schema_version must be 1")
+    identity = snapshot.get("identity")
+    live = snapshot.get("live")
+    if not isinstance(identity, Mapping) or not isinstance(live, Mapping):
+        raise TmuxWorkerError("phase snapshot requires identity and live objects")
+    expected = {
+        "task_ref": manifest["task_ref"],
+        "branch": manifest["branch"],
+        "worktree_path": manifest["worktree"],
+        "code_host_repository": manifest["repository"],
+    }
+    mismatches = [key for key, value in expected.items() if identity.get(key) != value]
+    if mismatches:
+        raise TmuxWorkerError(
+            "phase snapshot identity mismatch: " + ", ".join(sorted(mismatches))
+        )
+    required_live = ("task_state", "task_owner", "branch_head", "base_branch", "base_sha")
+    missing = [key for key in required_live if key not in live]
+    if missing:
+        raise TmuxWorkerError(
+            "phase snapshot live state is missing: " + ", ".join(sorted(missing))
+        )
+    return dict(live)
+
+
+def _legacy_phase_prompt(
+    manifest: Mapping[str, Any], snapshot: Mapping[str, Any]
+) -> str:
+    handoff = manifest["handoff"]
+    assert isinstance(handoff, Mapping)
+    immutable_assignment = {
+        key: handoff.get(key)
+        for key in (
+            "mode",
+            "run_id",
+            "task_ref",
+            "task_kind",
+            "worker_runtime",
+            "runtime",
+            "work_store",
+            "code_host",
+            "worktree_path",
+            "branch",
+            "stacked_on",
+        )
+        if key in handoff
+    }
+    return (
+        "Use $brutal-worker for only this managed phase. Read only the context "
+        "required by the phase, keep the immutable assignment identity separate "
+        "from the revalidated live snapshot, and return the managed v2 result.\n\n"
+        + json.dumps(
+            {
+                "immutable_assignment": immutable_assignment,
+                "phase_snapshot": snapshot,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+
+def _write_attempt(
+    state_dir: Path,
+    manifest: Mapping[str, Any],
+    *,
+    attempt_id: str,
+    phase: str,
+    live: Mapping[str, Any],
+    parent_attempt_id: str | None,
+    mode: str,
+) -> tuple[Path, dict[str, Any]]:
+    attempt = _attempt_dir(state_dir, attempt_id)
+    if attempt.exists():
+        raise TmuxWorkerError(f"managed attempt already exists: {attempt_id}")
+    attempt.mkdir(parents=True)
+    os.chmod(attempt, 0o700)
+    snapshot = _phase_snapshot(
+        manifest,
+        phase,
+        attempt_id,
+        live=live,
+        parent_attempt_id=parent_attempt_id,
+    )
+    prompt_path = attempt / "prompt.txt"
+    prompt = _legacy_phase_prompt(manifest, snapshot)
+    prompt_path.write_text(prompt, encoding="utf-8")
+    os.chmod(prompt_path, 0o600)
+    _atomic_json(attempt / "phase-snapshot.json", snapshot)
+    _atomic_json(
+        attempt / "result-schema.json",
+        _managed_result_schema(phase),
+    )
+    _atomic_json(
+        attempt / "attempt.json",
+        {
+            "attempt_id": attempt_id,
+            "phase": phase,
+            "mode": mode,
+            "parent_attempt_id": parent_attempt_id,
+            "created_at": time.time(),
+        },
+    )
+    return attempt, snapshot
 
 
 def _load_data(path: str | Path) -> dict[str, Any]:
@@ -309,8 +699,89 @@ def _parse_thread_id(events_path: Path) -> str | None:
     return found
 
 
+def _nonnegative_integer(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _valid_checkpoint(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    required = {
+        "branch",
+        "head_sha",
+        "base_branch",
+        "base_sha",
+        "pull_request",
+        "verification_head",
+        "verification_summary",
+        "review_id",
+        "findings_by_severity",
+        "queued_finding_count",
+        "unhandled_finding_count",
+        "summary_posted",
+        "residual_findings",
+    }
+    if set(value) != required:
+        return False
+    if any(
+        not isinstance(value[key], str) or not value[key]
+        for key in ("branch", "head_sha", "base_branch", "base_sha")
+    ):
+        return False
+    if not isinstance(value["verification_summary"], str):
+        return False
+    for key in ("pull_request", "verification_head", "review_id"):
+        if value[key] is not None and not isinstance(value[key], str):
+            return False
+    if not isinstance(value["summary_posted"], bool):
+        return False
+    if not all(
+        _nonnegative_integer(value[key])
+        for key in ("queued_finding_count", "unhandled_finding_count")
+    ):
+        return False
+    counts = value["findings_by_severity"]
+    severities = {"CRITICAL", "MAJOR", "MINOR", "NIT"}
+    if (
+        not isinstance(counts, dict)
+        or set(counts) != severities
+        or not all(_nonnegative_integer(counts[key]) for key in severities)
+    ):
+        return False
+    residuals = value["residual_findings"]
+    if not isinstance(residuals, list):
+        return False
+    for residual in residuals:
+        if not isinstance(residual, dict) or set(residual) not in (
+            {"fingerprint", "severity", "summary"},
+            {"fingerprint", "severity", "summary", "location"},
+        ):
+            return False
+        if residual.get("severity") not in {"MINOR", "NIT"}:
+            return False
+        if any(
+            not isinstance(residual.get(key), str) or not residual[key]
+            for key in ("fingerprint", "summary")
+        ):
+            return False
+        if (
+            "location" in residual
+            and residual["location"] is not None
+            and not isinstance(residual["location"], str)
+        ):
+            return False
+    if len(residuals) != counts["MINOR"] + counts["NIT"]:
+        return False
+    return True
+
+
 def _read_result(
-    result_path: Path, expected_task_ref: str | None = None
+    result_path: Path,
+    expected_task_ref: str | None = None,
+    *,
+    expected_phase: str | None = None,
+    expected_attempt_id: str | None = None,
+    managed: bool = False,
 ) -> dict[str, Any] | None:
     if not result_path.exists():
         return None
@@ -320,15 +791,76 @@ def _read_result(
         return None
     if not isinstance(value, dict):
         return None
-    status = value.get("status")
-    if status not in {"clean", "blocked", "canceled", "claim_lost", "failed"}:
-        return None
     if not isinstance(value.get("task_ref"), str) or not value["task_ref"]:
         return None
     if not isinstance(value.get("summary"), str):
         return None
     if expected_task_ref is not None and value.get("task_ref") != expected_task_ref:
         return None
+    status = value.get("status")
+    if not managed:
+        if status not in _TERMINAL_STATUSES:
+            return None
+        return value
+    if value.get("schema_version") != 2 or status == "progress":
+        return None
+    if status not in {"checkpoint", *_TERMINAL_STATUSES}:
+        return None
+    if value.get("phase") not in _PHASES or not isinstance(value.get("attempt_id"), str):
+        return None
+    if expected_phase is not None and value.get("phase") != expected_phase:
+        return None
+    if expected_attempt_id is not None and value.get("attempt_id") != expected_attempt_id:
+        return None
+    common = {"schema_version", "status", "task_ref", "summary", "phase", "attempt_id"}
+    if status == "checkpoint":
+        if (
+            set(value) != common | {"checkpoint"}
+            or value.get("phase") not in _CHECKPOINT_PHASES
+            or not _valid_checkpoint(value.get("checkpoint"))
+        ):
+            return None
+    elif status == "clean":
+        if (
+            set(value) != common | {"completion_kind", "cleanup_eligible", "result"}
+            or value.get("phase") not in {"handoff", "complete"}
+        ):
+            return None
+        if value.get("completion_kind") not in {
+            "zero_findings",
+            "materially_clean",
+            "merged",
+        }:
+            return None
+        if (
+            value["phase"] == "handoff"
+            and value["completion_kind"] not in {"zero_findings", "materially_clean"}
+        ) or (
+            value["phase"] == "complete" and value["completion_kind"] != "merged"
+        ):
+            return None
+        if not isinstance(value.get("cleanup_eligible"), bool) or not _valid_checkpoint(
+            value.get("result")
+        ):
+            return None
+        counts = value["result"]["findings_by_severity"]
+        if (
+            value["result"]["queued_finding_count"] != 0
+            or value["result"]["unhandled_finding_count"] != 0
+        ):
+            return None
+        if value["completion_kind"] == "zero_findings" and any(counts.values()):
+            return None
+        if value["completion_kind"] == "materially_clean" and (
+            counts["CRITICAL"] != 0 or counts["MAJOR"] != 0
+        ):
+            return None
+    else:
+        blocker = value.get("blocker")
+        if set(value) != common | {"blocker"} or (
+            blocker is not None and not isinstance(blocker, str)
+        ):
+            return None
     return value
 
 
@@ -432,7 +964,7 @@ def _write_runtime_files(
     prompt_path = state_dir / "prompt.txt"
     prompt_path.write_text(prompt, encoding="utf-8")
     os.chmod(prompt_path, 0o600)
-    _atomic_json(state_dir / "result-schema.json", RESULT_SCHEMA)
+    _atomic_json(state_dir / "result-schema.json", LEGACY_RESULT_SCHEMA)
     _atomic_json(state_dir / "manifest.json", manifest)
 
 
@@ -442,6 +974,7 @@ def _worker_command(
     mode: str,
     codex_bin: str,
     thread_id: str | None = None,
+    attempt_dir: Path | None = None,
 ) -> list[str]:
     command = [
         sys.executable,
@@ -454,6 +987,8 @@ def _worker_command(
         "--codex-bin",
         codex_bin,
     ]
+    if attempt_dir is not None:
+        command.extend(["--attempt-dir", str(attempt_dir)])
     if thread_id is not None:
         command.extend(["--thread-id", thread_id])
     return command
@@ -585,7 +1120,7 @@ def launch_worker(
         raise TmuxWorkerError(f"tmux session collision: {session}")
 
     manifest: dict[str, Any] = {
-        "version": 1,
+        "version": 2 if handoff is not None else 1,
         "repository": repository,
         "canonical_repository": _canonical_repository(primary, common),
         "task_ref": task_ref,
@@ -605,13 +1140,29 @@ def launch_worker(
             "state_dir": str(state_dir),
         }
         manifest["handoff"] = resolved_handoff
-        prompt = (
-            "Use $brutal-worker for only the exact managed task in this immutable "
-            "handoff. Return the required structured worker result.\n\n"
-            + json.dumps(resolved_handoff, indent=2, sort_keys=True)
-            + "\n"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    os.chmod(state_dir, 0o700)
+    _atomic_json(state_dir / "manifest.json", manifest)
+    attempt: Path | None = None
+    phase: str | None = None
+    if handoff is None:
+        _write_runtime_files(state_dir, prompt, manifest)
+    else:
+        phase = _initial_phase(resolved_handoff)
+        attempt_id = _attempt_id(1)
+        attempt, _ = _write_attempt(
+            state_dir,
+            manifest,
+            attempt_id=attempt_id,
+            phase=phase,
+            live=_initial_live_snapshot(resolved_handoff),
+            parent_attempt_id=None,
+            mode="fresh",
         )
-    _write_runtime_files(state_dir, prompt, manifest)
+        _atomic_json(
+            state_dir / "active.json",
+            {"attempt_id": attempt_id, "phase": phase, "started": False},
+        )
     metadata = {
         "repository": repository,
         "task_ref": task_ref,
@@ -625,9 +1176,23 @@ def launch_worker(
             tmux_socket,
             session,
             worktree,
-            _worker_command(state_dir, mode="fresh", codex_bin=codex_executable),
+            _worker_command(
+                state_dir,
+                mode="fresh",
+                codex_bin=codex_executable,
+                attempt_dir=attempt,
+            ),
             metadata,
         )
+        if attempt is not None:
+            _atomic_json(
+                state_dir / "active.json",
+                {
+                    "attempt_id": attempt.name,
+                    "phase": phase,
+                    "started": True,
+                },
+            )
     except Exception:
         # Provisioning failed before Codex could be trusted as a worker. Runtime
         # evidence is intentionally retained for diagnosis.
@@ -640,6 +1205,8 @@ def launch_worker(
         "branch": branch,
         "worktree": str(worktree),
         "running": True,
+        "attempt_id": attempt.name if attempt is not None else None,
+        "phase": phase,
         **_observer_commands(tmux_executable, tmux_socket, session),
     }
 
@@ -709,14 +1276,32 @@ def inspect_worker(
         tmux_socket,
         require_registered_worktree=False,
     )
+    manifest = _read_manifest(state_dir)
+    managed = _is_managed(manifest)
+    active: dict[str, Any] | None = _active_attempt(state_dir) if managed else None
+    runtime_dir = (
+        _attempt_dir(state_dir, str(active["attempt_id"])) if active else state_dir
+    )
     exists = _session_exists(tmux_executable, tmux_socket, session)
-    thread_id = _parse_thread_id(state_dir / "events.jsonl")
+    thread_id = _parse_thread_id(runtime_dir / "events.jsonl")
     if thread_id:
-        _atomic_json(state_dir / "session.json", {"thread_id": thread_id})
-    result = _read_result(state_dir / "result.json", task_ref)
+        _atomic_json(
+            state_dir / "session.json",
+            {
+                "thread_id": thread_id,
+                "attempt_id": active["attempt_id"] if active else None,
+            },
+        )
+    result = _read_result(
+        runtime_dir / "result.json",
+        task_ref,
+        expected_phase=str(active["phase"]) if active else None,
+        expected_attempt_id=str(active["attempt_id"]) if active else None,
+        managed=managed,
+    )
     exit_data: dict[str, Any] | None = None
     try:
-        raw_exit = json.loads((state_dir / "exit.json").read_text(encoding="utf-8"))
+        raw_exit = json.loads((runtime_dir / "exit.json").read_text(encoding="utf-8"))
         if isinstance(raw_exit, dict):
             exit_data = raw_exit
     except (OSError, json.JSONDecodeError):
@@ -732,6 +1317,9 @@ def inspect_worker(
         "thread_id": thread_id,
         "result": result,
         "exit": exit_data,
+        "managed": managed,
+        "attempt_id": active["attempt_id"] if active else None,
+        "phase": active["phase"] if active else None,
         **_observer_commands(tmux_executable, tmux_socket, session),
     }
     if not exists:
@@ -765,7 +1353,351 @@ def inspect_worker(
             "task_ref": task_ref,
             "summary": "worker process exited without a valid structured result",
         }
+    elif (
+        not response["running"]
+        and managed
+        and result is not None
+        and result.get("status") == "checkpoint"
+        and (exit_data is None or exit_data.get("exit_code") != 0)
+    ):
+        response["reported_result"] = result
+        response["result"] = {
+            "status": "failed",
+            "task_ref": task_ref,
+            "summary": "transition is not backed by a completed zero-exit attempt",
+        }
     return response
+
+
+def _next_attempt_id(state_dir: Path) -> str:
+    attempts = state_dir / "attempts"
+    numbers = [
+        int(path.name)
+        for path in attempts.iterdir()
+        if path.is_dir() and re.fullmatch(r"[0-9]{6}", path.name)
+    ]
+    return _attempt_id((max(numbers) if numbers else 0) + 1)
+
+
+def _derived_successor(result: Mapping[str, Any]) -> str:
+    phase = result.get("phase")
+    if phase == "work":
+        return "review"
+    if phase == "fix":
+        checkpoint = result.get("checkpoint")
+        if not isinstance(checkpoint, Mapping) or checkpoint.get(
+            "unhandled_finding_count"
+        ) != 0:
+            raise TmuxWorkerError("fix checkpoint has an undrained finding queue")
+        return "review"
+    if phase == "review":
+        checkpoint = result.get("checkpoint")
+        if not isinstance(checkpoint, Mapping):
+            raise TmuxWorkerError("review checkpoint is missing evidence")
+        counts = checkpoint.get("findings_by_severity")
+        if not isinstance(counts, Mapping):
+            raise TmuxWorkerError("review checkpoint is missing finding counts")
+        material_counts = (counts.get("CRITICAL"), counts.get("MAJOR"))
+        if any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+            for value in material_counts
+        ):
+            raise TmuxWorkerError("review checkpoint has invalid material finding counts")
+        material = sum(material_counts)
+        if material == 0 and (
+            checkpoint.get("queued_finding_count") != 0
+            or checkpoint.get("unhandled_finding_count") != 0
+        ):
+            raise TmuxWorkerError(
+                "materially clean review checkpoint still has an actionable queue"
+            )
+        return "fix" if material > 0 else "handoff"
+    raise TmuxWorkerError(f"phase {phase!r} cannot advance")
+
+
+def _attempt_result(
+    state_dir: Path,
+    manifest: Mapping[str, Any],
+    active: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    attempt = _attempt_dir(state_dir, str(active["attempt_id"]))
+    exit_data = _read_json(attempt / "exit.json")
+    if exit_data is None or exit_data.get("exit_code") != 0:
+        raise TmuxWorkerError("active attempt does not have a completed zero exit")
+    result = _read_result(
+        attempt / "result.json",
+        str(manifest["task_ref"]),
+        expected_phase=str(active["phase"]),
+        expected_attempt_id=str(active["attempt_id"]),
+        managed=True,
+    )
+    if result is None or result.get("status") != "checkpoint":
+        raise TmuxWorkerError(
+            "active attempt does not have an advanceable checkpoint"
+        )
+    return result, exit_data
+
+
+def _start_managed_attempt(
+    *,
+    state_dir: Path,
+    manifest: Mapping[str, Any],
+    worktree: Path,
+    session: str,
+    tmux_executable: str,
+    tmux_socket: str | None,
+    codex_executable: str,
+    phase: str,
+    live: Mapping[str, Any],
+    parent_attempt_id: str,
+    mode: str,
+    thread_id: str | None,
+    expected_metadata: Mapping[str, str],
+    session_exists: bool,
+    resume_instruction: str | None = None,
+) -> tuple[str, dict[str, Any]]:
+    attempt_id = _next_attempt_id(state_dir)
+    attempt, snapshot = _write_attempt(
+        state_dir,
+        manifest,
+        attempt_id=attempt_id,
+        phase=phase,
+        live=live,
+        parent_attempt_id=parent_attempt_id,
+        mode=mode,
+    )
+    if resume_instruction:
+        prompt_path = attempt / "prompt.txt"
+        prompt_path.write_text(
+            prompt_path.read_text(encoding="utf-8")
+            + "\nResume instruction:\n"
+            + resume_instruction.strip()
+            + "\n",
+            encoding="utf-8",
+        )
+    previous = _active_attempt(state_dir)
+    _atomic_json(
+        state_dir / "active.json",
+        {
+            "attempt_id": attempt_id,
+            "phase": phase,
+            "started": False,
+            "parent_attempt_id": parent_attempt_id,
+        },
+    )
+    command = _worker_command(
+        state_dir,
+        mode=mode,
+        codex_bin=codex_executable,
+        thread_id=thread_id,
+        attempt_dir=attempt,
+    )
+    try:
+        if session_exists:
+            _tmux(
+                tmux_executable,
+                tmux_socket,
+                "respawn-pane",
+                "-k",
+                "-t",
+                f"={session}:0.0",
+                "-c",
+                str(worktree),
+                shlex.join(command),
+            )
+        else:
+            _spawn_pane(
+                tmux_executable,
+                tmux_socket,
+                session,
+                worktree,
+                command,
+                expected_metadata,
+            )
+    except Exception:
+        _atomic_json(state_dir / "active.json", previous)
+        raise
+    _atomic_json(
+        state_dir / "active.json",
+        {
+            "attempt_id": attempt_id,
+            "phase": phase,
+            "started": True,
+            "parent_attempt_id": parent_attempt_id,
+        },
+    )
+    return attempt_id, snapshot
+
+
+def advance_worker(
+    *,
+    repo_path: str | Path,
+    worktree_path: str | Path,
+    task_ref: str,
+    branch: str,
+    phase_snapshot: Mapping[str, Any],
+    expected_attempt_id: str,
+    revalidated: bool,
+    repository_identity: str | None = None,
+    tmux_socket: str | None = None,
+    tmux_bin: str = "tmux",
+    codex_bin: str = "codex",
+) -> dict[str, Any]:
+    if not revalidated:
+        raise TmuxWorkerError("managed advance requires caller revalidation")
+    tmux_executable = _executable(tmux_bin, "tmux")
+    codex_executable = _executable(codex_bin, "Codex")
+    repository, worktree, state_dir, session = _identity(
+        repo_path,
+        worktree_path,
+        task_ref,
+        branch,
+        repository_identity,
+        tmux_socket,
+        require_registered_worktree=True,
+    )
+    manifest = _read_manifest(state_dir)
+    if not _is_managed(manifest):
+        raise TmuxWorkerError("advance requires a managed worker")
+    expected_metadata = {
+        "repository": repository,
+        "task_ref": task_ref,
+        "branch": branch,
+        "worktree": str(worktree),
+        "state_dir": str(state_dir),
+    }
+    with _transition_lock(state_dir):
+        active = _active_attempt(state_dir)
+        if active["attempt_id"] != expected_attempt_id:
+            raise TmuxWorkerError(
+                f"stale attempt replay: expected {expected_attempt_id}, "
+                f"active is {active['attempt_id']}"
+            )
+        session_exists = _session_exists(tmux_executable, tmux_socket, session)
+        if session_exists:
+            _validate_tmux_metadata(
+                tmux_executable, tmux_socket, session, expected_metadata
+            )
+            if _pane_state(tmux_executable, tmux_socket, session)["running"]:
+                raise TmuxWorkerError("refusing to advance a running worker pane")
+        result, _ = _attempt_result(state_dir, manifest, active)
+        live = _validate_live_snapshot(phase_snapshot, manifest)
+        phase = _derived_successor(result)
+        attempt_id, snapshot = _start_managed_attempt(
+            state_dir=state_dir,
+            manifest=manifest,
+            worktree=worktree,
+            session=session,
+            tmux_executable=tmux_executable,
+            tmux_socket=tmux_socket,
+            codex_executable=codex_executable,
+            phase=phase,
+            live=live,
+            parent_attempt_id=expected_attempt_id,
+            mode="fresh",
+            thread_id=None,
+            expected_metadata=expected_metadata,
+            session_exists=session_exists,
+        )
+    return {
+        "action": "advanced",
+        "session_name": session,
+        "state_dir": str(state_dir),
+        "task_ref": task_ref,
+        "attempt_id": attempt_id,
+        "phase": phase,
+        "snapshot_digest": _json_digest(snapshot),
+        "running": True,
+        **_observer_commands(tmux_executable, tmux_socket, session),
+    }
+
+
+def _resume_managed_worker(
+    *,
+    repository: str,
+    worktree: Path,
+    state_dir: Path,
+    session: str,
+    task_ref: str,
+    branch: str,
+    prompt: str,
+    revalidated: bool,
+    tmux_socket: str | None,
+    tmux_executable: str,
+    codex_executable: str,
+) -> dict[str, Any]:
+    manifest = _read_manifest(state_dir)
+    expected_metadata = {
+        "repository": repository,
+        "task_ref": task_ref,
+        "branch": branch,
+        "worktree": str(worktree),
+        "state_dir": str(state_dir),
+    }
+    with _transition_lock(state_dir):
+        active = _active_attempt(state_dir)
+        attempt = _attempt_dir(state_dir, str(active["attempt_id"]))
+        session_exists = _session_exists(tmux_executable, tmux_socket, session)
+        if session_exists:
+            _validate_tmux_metadata(
+                tmux_executable, tmux_socket, session, expected_metadata
+            )
+            if _pane_state(tmux_executable, tmux_socket, session)["running"]:
+                raise TmuxWorkerError("refusing to resume a running worker pane")
+        elif not revalidated:
+            raise TmuxWorkerError(
+                "recreating a lost managed tmux session requires caller revalidation"
+            )
+        completed = _read_json(attempt / "exit.json")
+        result = _read_result(
+            attempt / "result.json",
+            task_ref,
+            expected_phase=str(active["phase"]),
+            expected_attempt_id=str(active["attempt_id"]),
+            managed=True,
+        )
+        if (
+            completed is not None
+            and completed.get("exit_code") == 0
+            and result is not None
+            and result.get("status") == "checkpoint"
+        ):
+            raise TmuxWorkerError("completed transition must advance to a fresh phase")
+        thread_id = _parse_thread_id(attempt / "events.jsonl")
+        if thread_id is None:
+            raise TmuxWorkerError("managed attempt has no exact Codex thread to resume")
+        phase_data = _read_json(attempt / "phase-snapshot.json")
+        if phase_data is None or not isinstance(phase_data.get("live"), Mapping):
+            raise TmuxWorkerError("managed attempt has no reusable live snapshot")
+        attempt_id, snapshot = _start_managed_attempt(
+            state_dir=state_dir,
+            manifest=manifest,
+            worktree=worktree,
+            session=session,
+            tmux_executable=tmux_executable,
+            tmux_socket=tmux_socket,
+            codex_executable=codex_executable,
+            phase=str(active["phase"]),
+            live=dict(phase_data["live"]),
+            parent_attempt_id=str(active["attempt_id"]),
+            mode="resume",
+            thread_id=thread_id,
+            expected_metadata=expected_metadata,
+            session_exists=session_exists,
+            resume_instruction=prompt,
+        )
+    return {
+        "action": "resumed",
+        "session_name": session,
+        "state_dir": str(state_dir),
+        "task_ref": task_ref,
+        "thread_id": thread_id,
+        "attempt_id": attempt_id,
+        "phase": active["phase"],
+        "snapshot_digest": _json_digest(snapshot),
+        "running": True,
+        **_observer_commands(tmux_executable, tmux_socket, session),
+    }
 
 
 def resume_worker(
@@ -793,6 +1725,25 @@ def resume_worker(
         tmux_socket,
         require_registered_worktree=True,
     )
+    manifest = _read_manifest(state_dir)
+    if _is_managed(manifest):
+        if fresh:
+            raise TmuxWorkerError(
+                "managed phase changes use advance; resume only continues one phase"
+            )
+        return _resume_managed_worker(
+            repository=repository,
+            worktree=worktree,
+            state_dir=state_dir,
+            session=session,
+            task_ref=task_ref,
+            branch=branch,
+            prompt=prompt,
+            revalidated=revalidated,
+            tmux_socket=tmux_socket,
+            tmux_executable=tmux_executable,
+            codex_executable=codex_executable,
+        )
     expected = {
         "repository": repository,
         "task_ref": task_ref,
@@ -832,11 +1783,11 @@ def resume_worker(
             archived = state_dir / f"{name}.{int(time.time() * 1000)}.previous"
             path.replace(archived)
     command = _worker_command(
-                state_dir,
-                mode=mode,
-                codex_bin=codex_executable,
-                thread_id=thread_id,
-            )
+        state_dir,
+        mode=mode,
+        codex_bin=codex_executable,
+        thread_id=thread_id,
+    )
     if session_exists:
         _tmux(
             tmux_executable,
@@ -913,14 +1864,44 @@ def cleanup_worker(
     }
 
 
-def _run_worker(state_dir: Path, mode: str, codex_bin: str, thread_id: str | None) -> int:
+def _run_worker(
+    state_dir: Path,
+    mode: str,
+    codex_bin: str,
+    thread_id: str | None,
+    attempt_dir: Path | None,
+) -> int:
     manifest = _read_manifest(state_dir)
     worktree = _resolve(str(manifest["worktree"]))
-    prompt_path = state_dir / "prompt.txt"
-    events_path = state_dir / "events.jsonl"
-    result_path = state_dir / "result.json"
-    schema_path = state_dir / "result-schema.json"
-    command = [codex_bin, "exec"]
+    managed = attempt_dir is not None
+    runtime_dir = state_dir
+    expected_phase: str | None = None
+    expected_attempt_id: str | None = None
+    if managed:
+        runtime_dir = _resolve(attempt_dir)
+        if runtime_dir.parent != _resolve(state_dir / "attempts"):
+            raise TmuxWorkerError("attempt directory is outside managed runtime")
+        attempt = _read_json(runtime_dir / "attempt.json")
+        if attempt is None:
+            raise TmuxWorkerError("managed attempt metadata is missing")
+        expected_attempt_id = attempt.get("attempt_id")
+        expected_phase = attempt.get("phase")
+        if (
+            not isinstance(expected_attempt_id, str)
+            or expected_phase not in _PHASES
+            or runtime_dir.name != expected_attempt_id
+        ):
+            raise TmuxWorkerError("managed attempt metadata is malformed")
+        active = _active_attempt(state_dir)
+        if active.get("attempt_id") != expected_attempt_id:
+            raise TmuxWorkerError("refusing to run a stale managed attempt")
+    elif _is_managed(manifest):
+        raise TmuxWorkerError("managed worker runner requires --attempt-dir")
+    prompt_path = runtime_dir / "prompt.txt"
+    events_path = runtime_dir / "events.jsonl"
+    result_path = runtime_dir / "result.json"
+    schema_path = runtime_dir / "result-schema.json"
+    command = [codex_bin, "exec", "--dangerously-bypass-approvals-and-sandbox"]
     if mode == "resume":
         if thread_id is None:
             raise TmuxWorkerError("resume runner requires an exact thread ID")
@@ -957,9 +1938,12 @@ def _run_worker(state_dir: Path, mode: str, codex_bin: str, thread_id: str | Non
         return_code = process.wait()
     thread = _parse_thread_id(events_path)
     if thread:
-        _atomic_json(state_dir / "session.json", {"thread_id": thread})
+        _atomic_json(
+            state_dir / "session.json",
+            {"thread_id": thread, "attempt_id": expected_attempt_id},
+        )
     _atomic_json(
-        state_dir / "exit.json",
+        runtime_dir / "exit.json",
         {
             "exit_code": return_code,
             "started_at": started,
@@ -967,7 +1951,11 @@ def _run_worker(state_dir: Path, mode: str, codex_bin: str, thread_id: str | Non
             "mode": mode,
             "thread_id": thread,
             "structured_result_valid": _read_result(
-                result_path, str(manifest["task_ref"])
+                result_path,
+                str(manifest["task_ref"]),
+                expected_phase=expected_phase,
+                expected_attempt_id=expected_attempt_id,
+                managed=managed,
             )
             is not None,
         },
@@ -1013,6 +2001,12 @@ def _parser() -> argparse.ArgumentParser:
     resume.add_argument("--codex-bin", default="codex")
     resume.add_argument("--fresh", action="store_true")
     resume.add_argument("--revalidated", action="store_true")
+    advance = subparsers.add_parser("advance")
+    _add_identity(advance)
+    advance.add_argument("--phase-snapshot", required=True)
+    advance.add_argument("--expected-attempt-id", required=True)
+    advance.add_argument("--revalidated", action="store_true")
+    advance.add_argument("--codex-bin", default="codex")
     cleanup = subparsers.add_parser("cleanup")
     _add_identity(cleanup)
     internal = subparsers.add_parser("_run")
@@ -1020,6 +2014,7 @@ def _parser() -> argparse.ArgumentParser:
     internal.add_argument("--mode", choices=("fresh", "resume"), required=True)
     internal.add_argument("--codex-bin", required=True)
     internal.add_argument("--thread-id")
+    internal.add_argument("--attempt-dir")
     return parser
 
 
@@ -1111,7 +2106,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "_run":
         try:
             return _run_worker(
-                _resolve(args.state_dir), args.mode, args.codex_bin, args.thread_id
+                _resolve(args.state_dir),
+                args.mode,
+                args.codex_bin,
+                args.thread_id,
+                _resolve(args.attempt_dir) if args.attempt_dir else None,
             )
         except (TmuxWorkerError, OSError, ValueError) as exc:
             print(str(exc), file=sys.stderr)
@@ -1148,6 +2147,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 **common,
                 prompt=_prompt(args),
                 fresh=args.fresh,
+                revalidated=args.revalidated,
+                codex_bin=args.codex_bin,
+            )
+        elif args.command == "advance":
+            result = advance_worker(
+                **common,
+                phase_snapshot=_load_data(args.phase_snapshot),
+                expected_attempt_id=args.expected_attempt_id,
                 revalidated=args.revalidated,
                 codex_bin=args.codex_bin,
             )

@@ -54,6 +54,13 @@ def opened(branch, *, clean=True):
     }
 
 
+def materially_clean(branch):
+    return {
+        **opened(branch, clean=False),
+        "review_gate": "materially_clean",
+    }
+
+
 class NormalizeGraphTests(unittest.TestCase):
     def test_normalizes_order_alias_head_and_owned_user(self):
         payload = graph(
@@ -91,6 +98,7 @@ class NormalizeGraphTests(unittest.TestCase):
             (graph([task("A", blockers=["A"])]), "own ref"),
             (graph([task("A", pr={"state": "open", "needs_reconcile": "yes"})]), "needs_reconcile"),
             (graph([task("A", pr={"state": "unknown"})]), "pr.state"),
+            (graph([task("A", pr={"state": "open", "review_gate": "maybe"})]), "review_gate"),
         ]
         for payload, message in invalid:
             with self.subTest(message=message):
@@ -151,6 +159,27 @@ class SelectWaveTests(unittest.TestCase):
             ("brutal/a", "brutal/a-sha", "A"),
         )
         self.assertEqual(result["held"][0]["reason"], "awaiting_review")
+
+    def test_materially_clean_blocker_is_stack_ready(self):
+        result = swarm_wave.select_wave(
+            graph(
+                [
+                    task("A", state="in_review", pr=materially_clean("brutal/a")),
+                    task("B", blockers=["A"]),
+                ]
+            )
+        )
+        selected = next(item for item in result["selected"] if item["ref"] == "B")
+        self.assertEqual(selected["stacked_on"], "A")
+
+    def test_explicit_not_ready_gate_overrides_legacy_clean_flag(self):
+        parent = opened("brutal/a", clean=True)
+        parent["review_gate"] = "not_ready"
+        result = swarm_wave.select_wave(
+            graph([task("A", state="in_review", pr=parent), task("B", blockers=["A"])])
+        )
+        held = next(item for item in result["held"] if item["ref"] == "B")
+        self.assertEqual(held["reason"], "blocker_pr_not_clean")
 
     def test_done_and_merged_blockers_are_satisfied(self):
         result = swarm_wave.select_wave(

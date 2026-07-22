@@ -15,6 +15,8 @@ TASK_STATES = frozenset(
     {"todo", "in_progress", "in_review", "done", "canceled"}
 )
 PR_STATES = frozenset({"open", "closed", "merged"})
+REVIEW_GATES = frozenset({"not_ready", "zero_findings", "materially_clean"})
+STACK_READY_REVIEW_GATES = frozenset({"zero_findings", "materially_clean"})
 
 
 class InputError(ValueError):
@@ -69,6 +71,14 @@ def _normalize_pr(value: Any, path: str) -> dict[str, Any] | None:
             raise InputError(f"{path}.clean must be a boolean")
         clean = clean_value
 
+    review_gate_value = pr.get("review_gate")
+    review_gate = None
+    if review_gate_value is not None:
+        review_gate = _string(review_gate_value, f"{path}.review_gate").lower()
+        if review_gate not in REVIEW_GATES:
+            expected = ", ".join(sorted(REVIEW_GATES))
+            raise InputError(f"{path}.review_gate must be one of: {expected}")
+
     normalized: dict[str, Any] = {
         "state": state,
         "branch": _optional_string(pr.get("branch"), f"{path}.branch"),
@@ -77,6 +87,7 @@ def _normalize_pr(value: Any, path: str) -> dict[str, Any] | None:
         ),
         "head_sha": _optional_string(pr.get("head_sha"), f"{path}.head_sha"),
         "clean": clean,
+        "review_gate": review_gate,
         "needs_reconcile": _optional_bool(
             pr.get("needs_reconcile"), f"{path}.needs_reconcile"
         ),
@@ -279,7 +290,12 @@ def _blocker_base(
         return None, "blocker_pr_closed", unresolved_refs
     if pr["state"] != "open":
         return None, "blocker_not_ready", unresolved_refs
-    if pr["clean"] is not True:
+    review_ready = (
+        pr["review_gate"] in STACK_READY_REVIEW_GATES
+        if pr["review_gate"] is not None
+        else pr["clean"] is True
+    )
+    if not review_ready:
         return None, "blocker_pr_not_clean", unresolved_refs
     if pr["branch"] is None or pr["head_sha"] is None:
         return None, "blocker_pr_head_missing", unresolved_refs

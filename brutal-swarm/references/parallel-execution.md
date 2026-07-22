@@ -2,9 +2,9 @@
 
 Read this reference before scheduling a Brutal Swarm run.
 
-## Managed Worker Handoff
+## Immutable Assignment Handoff
 
-Pass one exact handoff to each worker:
+Pass one exact assignment to each worker:
 
 ```yaml
 mode: managed
@@ -12,6 +12,7 @@ run_id: <safe unique token>
 task_ref: <stable provider ref>
 task_kind: task | review_finding
 worker_runtime: tmux | subagent
+phase: work | review | fix | complete
 runtime:
   session_name: <tmux session or null>
   state_dir: <absolute tmux state directory or null>
@@ -27,127 +28,127 @@ branch: <task branch>
 branch_head: <sha>
 base_branch: <remote branch>
 base_sha: <sha>
+task_state: <normalized state>
+task_owner: <stable owner or null>
+pull_request: <provider identity or null>
+checks: <normalized check state or null>
 stacked_on:
   task_ref: <single blocker ref or null>
   pr: <provider PR ref or null>
 ```
 
-The handoff is immutable. The tmux supervisor resolves and writes its two
-`runtime` fields before starting Codex; native subagent handoffs use `null`.
-Runtime fields are observational and grant no task, branch, pull-request, or
-provider authority. If live provider state contradicts the handoff, stop and
-report the stale field rather than silently choosing another task or base.
+Assignment identity is immutable. The runtime adapter fills its runtime fields
+before launch. Runtime data grants no task, Git, or provider authority.
 
-## Worker Runtimes
+## Mutable Phase Snapshot
 
-Resolve `execution.worker_runtime` through the shared resolver before creating
-worktrees. Missing configuration means `tmux`.
+Before every managed phase transition, re-read live provider and Git state and
+write a schema-versioned snapshot containing:
 
-For `tmux`, use `../scripts/tmux_worker.py`. It launches one non-ephemeral
-`codex exec` process in the exact task worktree, sends the handoff through a
-private prompt file, and retains its tmux session after exit. Treat task, pull
-request, Git, and worktree state as truth; JSONL logs and tmux metadata are
-observability and recovery hints only. A lost tmux server never authorizes a
-task transition or replacement worker.
+```yaml
+schema_version: 1
+identity:
+  task_ref: <exact assignment ref>
+  branch: <exact branch>
+  worktree_path: <exact path>
+  code_host_repository: <exact repository identity>
+live:
+  task_state: <current state>
+  task_owner: <current owner>
+  branch_head: <current local/provider head>
+  base_branch: <current PR base branch>
+  base_sha: <current base SHA>
+  pull_request: <current identity and state>
+  checks: <current normalized checks>
+```
 
-Call `launch --repo <primary> --handoff <file>` for a new assignment and retain
-its JSON response. Use `inspect` to distinguish live workers from retained dead
-panes, `resume` for the exact recorded Codex thread, and `cleanup` only on an
-explicit session-cleanup request. Mutating commands require the same exact repo,
-task, branch, worktree, repository identity, and tmux socket. The helper returns
-safe attach and capture argv; the pane mirrors live Codex JSONL while the same
-events remain in the protected state directory.
+The immutable handoff says *what is owned*; the phase snapshot says *what is
+true now*. Reject identity mismatches rather than silently adopting new work.
+Review evidence is keyed by the complete base/head snapshot, never head alone.
 
-On a later swarm run, `inspect` may rediscover a retained task using the primary
-repo, exact task ref, repository identity, and original tmux socket without an
-existing worktree. Recreate the manifest's recorded worktree path with
-`worktree_manager.py create --path` before resuming; do not move the persistent
-task session to a newly derived run path.
+## Managed Worker Protocol
 
-Accept worker statuses `clean`, `blocked`, `canceled`, `claim_lost`, and
-`failed`. Treat a nonzero process exit, malformed result, or mismatched task ref
-as `failed` even if a partial result claims success.
+`tmux_worker.py` stores `attempts/000001`, `000002`, … and an atomic
+`active.json`. Each attempt owns its prompt, phase snapshot, result schema,
+events, result, and exit record. Attempts are append-only.
 
-For `subagent`, launch the existing persistent native collaboration worker with
-the same exact handoff. Do not mix runtimes within one run. Never fall back from
-one runtime to the other implicitly.
+| Phase | Worker scope | Successful result | Controller successor |
+| --- | --- | --- | --- |
+| `work` | claim, implement, verify, publish PR | checkpoint | `review` |
+| `review` | one fresh material-convergence review | checkpoint | `fix` if CRITICAL+MAJOR > 0; else `handoff` |
+| `fix` | drain that review’s full queue, verify, push | checkpoint | `review` |
+| `handoff` | final revalidation and task transition | terminal clean | none |
+| `complete` | record an already-merged PR and close task | terminal merged | none |
 
-Count only live workers toward the concurrency cap. A retained exited tmux
-session occupies no slot.
+`finalize` is a scheduler action, not a managed phase. Map it to an initial
+`complete` handoff.
 
-## Normalized Graph
+Launch a new assignment with:
 
-Build the JSON consumed by `../scripts/swarm_wave.py` from fresh provider reads.
-Use stable refs and deterministic provider ordering. Each task includes:
+    tmux_worker.py launch --repo <primary> --handoff <file>
 
-- `ref`, `kind`, `state`, `order_key`, and optional numeric `priority`
-- `blockers` as stable refs
-- `claimable`, `decision_complete`, and `owned` booleans
-- optional `branch`, `base_branch`, and `base_sha`
-- optional `pr` with `state`, `branch`, `base_branch`, `head_sha`, `clean`, and
-  `needs_reconcile`
+After `inspect` reports a zero-exit checkpoint, revalidate live state and call:
 
-Pass `root_base.branch`, `root_base.sha`, and the effective worker `limit`. Treat
-the helper output as scheduling advice; re-read live state before every claim.
+    tmux_worker.py advance --repo <primary> --handoff <file> \
+      --phase-snapshot <file> --expected-attempt-id <id> \
+      --revalidated
 
-## Stack-Ready Rules
+The helper holds an exclusive transition lock, compares the active attempt,
+validates the exit/result pair, derives the successor, writes the next attempt,
+atomically changes `active.json`, and respawns the retained pane. A replayed
+controller action fails closed.
+
+Use `resume` only when an attempt was interrupted before a valid completed
+checkpoint. It creates a new append-only attempt in the same phase and resumes
+the exact recorded Codex thread. A phase transition always starts a fresh
+thread. Recreating a lost tmux server requires full caller revalidation.
+
+Accept terminal statuses `clean`, `blocked`, `canceled`, `claim_lost`, and
+`failed`. Treat nonzero exit, missing/partial exit, malformed result, wrong
+task/phase/attempt as failure. The controller never accepts a
+worker-supplied next phase.
+
+## Native Subagent Runtime
+
+Use one persistent exact-task collaboration worker for the whole lifecycle and
+the same immutable assignment. Do not mix runtimes within a run. Reviewer
+subagents spawned inside a review use `fork_turns: "none"` and receive only the
+minimal snapshot context; they are not ticket workers and do not expand the
+ticket-worker cap.
+
+## Normalized Graph And Review Gate
+
+Build `swarm_wave.py` input from fresh provider reads. Each PR may contain
+`state`, `branch`, `base_branch`, `head_sha`, compatibility `clean`,
+`review_gate`, and `needs_reconcile`. `review_gate` is one of `not_ready`,
+`zero_findings`, or `materially_clean`; when present it is authoritative.
+`zero_findings` and `materially_clean` are stack-ready.
 
 - No unmerged blocker: use the root base.
-- Exactly one open, clean blocker pull request: branch from its head and target
-  its head branch.
-- More than one direct blocker: wait until every blocker pull request merges
-  into the root base, even when only one remains unmerged. Verify the merge
-  targets before normalizing them as satisfied.
-- Dependency cycle: hold every participating task and report the cycle; never
-  linearize it implicitly.
-- Closed-unmerged, blocked, stale, incomplete, unknown, or claim-lost blocker:
-  hold every descendant.
-- Multiple children of one clean blocker may run concurrently.
+- Exactly one open stack-ready blocker PR: branch from its head and target its
+  branch.
+- More than one direct blocker: wait for every blocker PR to merge into the
+  common target.
+- Hold cycles and descendants of closed-unmerged, stale, incomplete, unknown,
+  blocked, or claim-lost blockers.
+- Multiple children of one stack-ready blocker may run concurrently.
 
-Logical work-store blockers remain intact while a child is developed on a
-single blocker branch. Never delete or falsify dependency relationships to make
-an adapter report the child as unblocked.
+Keep logical work-store blockers intact while developing a stacked child.
 
-## Pull-Request Reconciliation
+## Failure, Resume, And Evidence
 
-GitHub automatically retargets an open child only when its merged base branch is
-deleted. On every later run, verify the actual base instead of assuming that
-happened.
+- Provisioning failure: create no claim; clean only verified empty state.
+- Claim loss: make no further code/provider change.
+- Worker/push/PR failure: preserve branch, worktree, attempts, and exact missing
+  operations; continue independent work.
+- Swarm interruption: reconstruct from provider state, PR markers, branch
+  metadata, registered worktrees, and attempt manifests.
+- Worktree removal: require matching local and pushed PR head SHAs.
+- Session cleanup: exact dead session only; preserve logs, branches, PRs, task
+  records, and worktrees.
 
-For each affected child, hand the child task to its own worker. That worker:
-
-1. fetches the new base and records its head
-2. merges it normally into the child branch without rewriting history
-3. resolves conflicts and reruns required verification
-4. pushes normally, then changes the PR base when needed
-5. runs a fresh infinite review/fix loop
-
-A parent worker never edits a child's branch, task, or pull request.
-
-## Failure And Resume
-
-- Provisioning failure: create no task claim; clean only verified empty state.
-- Claim loss: make no code or provider change after the failed claim.
-- Worker failure: preserve task branch and worktree; continue independent work.
-- Push or PR failure: keep `in_progress`, record the exact completed and missing
-  operations, and resume the same identity later.
-- Swarm interruption: reconstruct from work-store state, PR markers, branch
-  metadata, and registered worktrees; do not require a local run manifest.
-- Tmux interruption: inspect the exact retained session and state directory.
-  Resume a dead matching Codex session when its ID is recorded. If it is absent,
-  launch a fresh exact-task process only after revalidating live task, PR,
-  branch, and worktree identity. Never resume a live pane.
-
-Remove a successful worktree only after the worker returns matching local and
-provider head SHAs. Pass the exact task ref to cleanup and require matching
-stored branch metadata. Keep task branches until their PRs are merged or closed
-by a human workflow.
-
-When resuming a branch found through its PR marker, pass that exact branch with
-`worktree_manager.py create --branch`; do not derive a replacement from a title
-that may have changed.
-
-Keep every tmux session after exit. Report its attach, capture, and exact cleanup
-commands. Explicit session cleanup must validate repository and task metadata,
-preserve runtime logs, and never remove branches, pull requests, work-store
-records, or worktrees.
+Count only live panes toward concurrency. Resume interrupted owned attempts
+before new tasks. Keep every exited tmux session until explicit guarded cleanup.
+Redirect verbose command output to attempt-local logs and expose only status,
+duration, structured checkpoint data, and a failure tail capped at 200 lines or
+16 KiB.
