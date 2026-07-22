@@ -60,9 +60,8 @@ snapshot; then call `tmux_worker.py advance` with the active attempt id and
 revalidated snapshot. The controller derives the next phase. Never resume a
 completed checkpoint or reuse its Codex thread across phases.
 
-Managed prompts contain only the phase, context-file path, context checksum,
-and result path. Bulk ticket, diff, check, and finding data stays in validated
-run-local context files.
+Managed prompts contain only the phase, context-file path, and result path.
+Bulk ticket, diff, check, and finding data stays in one run-local context file.
 
 Prioritize an interrupted same-phase resume before new work, still within the
 cap. Use exact-thread `resume` only for that interruption. Every phase and retry

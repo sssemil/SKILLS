@@ -23,8 +23,7 @@ worktree with `../brutal-swarm/scripts/worktree_manager.py`, and read
 For managed work, the immutable handoff establishes assignment identity;
 the phase snapshot supplies revalidated mutable state. Runtime names, logs, and
 old snapshots are observational and grant no provider authority.
-Validate the context-file checksum and every `{path, sha256}` reference before
-using it. Echo `context_sha256` in the managed result.
+Read only the supplied phase context file.
 
 ## Hard Rules
 
@@ -44,7 +43,7 @@ return the supervisor’s exact result. Do not continue into the next phase.
 
 If the ticket has `## Writable Directory` and BRUTAL.md configures
 `execution.edit_sandbox_command`, use `scoped_edit.py` to launch an editing
-child in that directory. The child may edit only: it must not commit, push, or
+child from a clean worktree in that directory. The child may edit only: it must not commit, push, or
 call providers. After it exits, reject changed paths outside the boundary;
 then the task worker reviews, verifies, commits, pushes, and owns the PR as
 normal. Missing commands, path escapes, or outside changes return `blocked`

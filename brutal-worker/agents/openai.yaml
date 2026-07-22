@@ -1,4 +1,4 @@
 interface:
   display_name: "Brutal Worker"
   short_description: "One-ticket scoped implementation"
-  default_prompt: "Use $brutal-worker to complete one exact task from its checksum-bound phase context and optional writable directory."
+  default_prompt: "Use $brutal-worker to complete one exact task from its phase context and optional writable directory."

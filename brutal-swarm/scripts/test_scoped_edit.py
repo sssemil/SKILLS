@@ -64,6 +64,11 @@ class ScopedEditTest(unittest.TestCase):
             scoped_edit.run(self.repo, "src/api", [str(self.command)], "OUTSIDE")
         self.assertTrue((self.repo / "outside.txt").exists(), "worktree is preserved")
 
+    def test_requires_clean_worktree(self) -> None:
+        (self.repo / "dirty.txt").write_text("dirty")
+        with self.assertRaisesRegex(scoped_edit.ScopedEditError, "clean worktree"):
+            scoped_edit.run(self.repo, "src/api", [str(self.command)], "inside")
+
 
 if __name__ == "__main__":
     unittest.main()

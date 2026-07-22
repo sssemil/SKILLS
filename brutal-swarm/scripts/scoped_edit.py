@@ -4,13 +4,12 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import shutil
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
-from typing import Any, Mapping, Sequence
+from typing import Any, Sequence
 
 
 class ScopedEditError(RuntimeError):
@@ -77,17 +76,6 @@ def _changed_paths(repository: Path) -> set[str]:
     return paths
 
 
-def _snapshot(repository: Path) -> dict[str, str]:
-    snapshot: dict[str, str] = {}
-    for path in _changed_paths(repository):
-        target = repository / path
-        if target.is_file() or target.is_symlink():
-            snapshot[path] = hashlib.sha256(target.read_bytes()).hexdigest()
-        else:
-            snapshot[path] = "missing"
-    return snapshot
-
-
 def _inside(path: str, allowed: Path, repository: Path) -> bool:
     target = (repository / path).resolve()
     return target == allowed or allowed in target.parents
@@ -106,7 +94,8 @@ def run(
         raise ScopedEditError(f"edit sandbox command not found: {command[0]}")
     repository = repository.resolve()
     allowed = resolve_directory(repository, directory)
-    before = _snapshot(repository)
+    if _changed_paths(repository):
+        raise ScopedEditError("edit sandbox requires a clean worktree")
     result = subprocess.run(
         [executable, *command[1:], "exec", "-"],
         cwd=allowed,
@@ -116,10 +105,7 @@ def run(
         stderr=subprocess.STDOUT,
         check=False,
     )
-    after = _snapshot(repository)
-    changed = sorted(
-        path for path in set(before) | set(after) if before.get(path) != after.get(path)
-    )
+    changed = sorted(_changed_paths(repository))
     outside = [path for path in changed if not _inside(path, allowed, repository)]
     if outside:
         raise ScopedEditError("child changed paths outside writable directory: " + ", ".join(outside))

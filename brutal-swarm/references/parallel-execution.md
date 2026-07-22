@@ -42,10 +42,8 @@ before launch. Runtime data grants no task, Git, or provider authority.
 
 ## Context File
 
-Keep bulk phase input in run-local JSON files. The prompt contains only phase,
-context-file path, context SHA-256, and result path, and must stay below 2 KiB.
-References contain exactly `{path, sha256}`. Reject escapes, missing files, and
-checksum mismatches. Results echo `context_sha256`.
+Keep bulk phase input in one run-local `context.json`. The prompt contains only
+phase, context path, and result path, and must stay below 2 KiB.
 
 - `work`: ticket, repository rules, branch state
 - `review`: acceptance criteria, diff/relevant code, checks
@@ -69,9 +67,9 @@ A ticket may declare one repository-relative directory:
 src/api
 ```
 
-When both exist, the task worker runs `scoped_edit.py`; the child edits from
-that directory, while the task worker retains Git/provider authority and
-checks every changed path before verifying and committing. `.` allows the
+When both exist, the task worker requires a clean worktree and runs
+`scoped_edit.py`; the child edits from that directory, while the task worker
+retains Git/provider authority and checks every changed path before verifying and committing. `.` allows the
 whole worktree. Missing commands, escapes, or outside changes block and
 preserve the worktree. The wrapper may still allow network and agent config or
 cache writes: this contract restricts repository writes only.

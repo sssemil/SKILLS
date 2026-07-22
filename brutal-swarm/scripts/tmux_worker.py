@@ -18,7 +18,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
-from worker_context import ContextError, build as build_context, prompt as context_prompt
+from worker_context import build as build_context, prompt as context_prompt
 
 class TmuxWorkerError(RuntimeError):
     """A user-actionable worker identity, runtime, or process error."""
@@ -169,9 +169,7 @@ def _managed_phase_variant(
     }
 
 
-def _managed_result_schema(
-    phase: str, *, version: int = 2, context_sha256: str | None = None
-) -> dict[str, Any]:
+def _managed_result_schema(phase: str) -> dict[str, Any]:
     if phase not in _PHASES:
         raise TmuxWorkerError(f"unknown managed phase: {phase}")
     variants: list[dict[str, Any]] = []
@@ -203,18 +201,10 @@ def _managed_result_schema(
             {"blocker": {"type": ["string", "null"]}},
         )
     )
-    schema = {
+    return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "oneOf": variants,
     }
-    if version == 3:
-        if context_sha256 is None:
-            raise TmuxWorkerError("managed v3 result requires a context checksum")
-        for variant in schema["oneOf"]:
-            variant["properties"]["schema_version"] = {"const": 3}
-            variant["properties"]["context_sha256"] = {"const": context_sha256}
-            variant["required"].append("context_sha256")
-    return schema
 
 
 # Backward-compatible name for callers that import the original constant.
@@ -437,9 +427,7 @@ def _json_digest(value: Mapping[str, Any]) -> str:
 
 
 def _is_managed(manifest: Mapping[str, Any]) -> bool:
-    return manifest.get("version") in {2, 3} and isinstance(
-        manifest.get("handoff"), Mapping
-    )
+    return manifest.get("version") == 2 and isinstance(manifest.get("handoff"), Mapping)
 
 
 def _attempt_id(number: int) -> str:
@@ -555,44 +543,6 @@ def _validate_live_snapshot(
     return dict(live)
 
 
-def _legacy_phase_prompt(
-    manifest: Mapping[str, Any], snapshot: Mapping[str, Any]
-) -> str:
-    handoff = manifest["handoff"]
-    assert isinstance(handoff, Mapping)
-    immutable_assignment = {
-        key: handoff.get(key)
-        for key in (
-            "mode",
-            "run_id",
-            "task_ref",
-            "task_kind",
-            "worker_runtime",
-            "runtime",
-            "work_store",
-            "code_host",
-            "worktree_path",
-            "branch",
-            "stacked_on",
-        )
-        if key in handoff
-    }
-    return (
-        "Use $brutal-worker for only this managed phase. Read only the context "
-        "required by the phase, keep the immutable assignment identity separate "
-        "from the revalidated live snapshot, and return the managed v2 result.\n\n"
-        + json.dumps(
-            {
-                "immutable_assignment": immutable_assignment,
-                "phase_snapshot": snapshot,
-            },
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n"
-    )
-
-
 def _write_attempt(
     state_dir: Path,
     manifest: Mapping[str, Any],
@@ -616,44 +566,25 @@ def _write_attempt(
         parent_attempt_id=parent_attempt_id,
     )
     prompt_path = attempt / "prompt.txt"
-    version = int(manifest["version"])
-    context_sha256: str | None = None
-    if version == 3:
-        handoff = manifest["handoff"]
-        assert isinstance(handoff, Mapping)
-        context_values = dict(handoff)
-        context_values.setdefault(
-            "task",
-            {
-                key: handoff.get(key)
-                for key in ("task_ref", "task_kind", "task_title", "task_goal")
-                if key in handoff
-            },
-        )
-        context_values["branch_state"] = dict(live)
-        try:
-            context_path, context_sha256 = build_context(
-                attempt / "context",
-                phase=phase,
-                handoff=context_values,
-                phase_snapshot=snapshot,
-                result_path=attempt / "result.json",
-            )
-            prompt = context_prompt(
-                phase, context_path, context_sha256, attempt / "result.json"
-            )
-        except ContextError as exc:
-            raise TmuxWorkerError(f"cannot build worker context: {exc}") from exc
-    else:
-        prompt = _legacy_phase_prompt(manifest, snapshot)
+    handoff = manifest["handoff"]
+    assert isinstance(handoff, Mapping)
+    context_values = dict(handoff)
+    context_values.setdefault("task", {"task_ref": manifest["task_ref"]})
+    context_values["branch_state"] = dict(live)
+    context_path = build_context(
+        attempt,
+        phase=phase,
+        handoff=context_values,
+        phase_snapshot=snapshot,
+        result_path=attempt / "result.json",
+    )
+    prompt = context_prompt(phase, context_path, attempt / "result.json")
     prompt_path.write_text(prompt, encoding="utf-8")
     os.chmod(prompt_path, 0o600)
     _atomic_json(attempt / "phase-snapshot.json", snapshot)
     _atomic_json(
         attempt / "result-schema.json",
-        _managed_result_schema(
-            phase, version=version, context_sha256=context_sha256
-        ),
+        _managed_result_schema(phase),
     )
     _atomic_json(
         attempt / "attempt.json",
@@ -662,7 +593,6 @@ def _write_attempt(
             "phase": phase,
             "mode": mode,
             "parent_attempt_id": parent_attempt_id,
-            "context_sha256": context_sha256,
             "created_at": time.time(),
         },
     )
@@ -828,8 +758,6 @@ def _read_result(
     expected_phase: str | None = None,
     expected_attempt_id: str | None = None,
     managed: bool = False,
-    managed_version: int = 2,
-    expected_context_sha256: str | None = None,
 ) -> dict[str, Any] | None:
     if not result_path.exists():
         return None
@@ -850,7 +778,7 @@ def _read_result(
         if status not in _TERMINAL_STATUSES:
             return None
         return value
-    if value.get("schema_version") != managed_version or status == "progress":
+    if value.get("schema_version") != 2 or status == "progress":
         return None
     if status not in {"checkpoint", *_TERMINAL_STATUSES}:
         return None
@@ -861,10 +789,6 @@ def _read_result(
     if expected_attempt_id is not None and value.get("attempt_id") != expected_attempt_id:
         return None
     common = {"schema_version", "status", "task_ref", "summary", "phase", "attempt_id"}
-    if managed_version == 3:
-        if value.get("context_sha256") != expected_context_sha256:
-            return None
-        common.add("context_sha256")
     if status == "checkpoint":
         if (
             set(value) != common | {"checkpoint"}
@@ -1172,7 +1096,7 @@ def launch_worker(
         raise TmuxWorkerError(f"tmux session collision: {session}")
 
     manifest: dict[str, Any] = {
-        "version": 3 if handoff is not None else 1,
+        "version": 2 if handoff is not None else 1,
         "repository": repository,
         "canonical_repository": _canonical_repository(primary, common),
         "task_ref": task_ref,
@@ -1334,7 +1258,6 @@ def inspect_worker(
     runtime_dir = (
         _attempt_dir(state_dir, str(active["attempt_id"])) if active else state_dir
     )
-    attempt_metadata = _read_json(runtime_dir / "attempt.json") if managed else None
     exists = _session_exists(tmux_executable, tmux_socket, session)
     thread_id = _parse_thread_id(runtime_dir / "events.jsonl")
     if thread_id:
@@ -1351,10 +1274,6 @@ def inspect_worker(
         expected_phase=str(active["phase"]) if active else None,
         expected_attempt_id=str(active["attempt_id"]) if active else None,
         managed=managed,
-        managed_version=int(manifest["version"]) if managed else 2,
-        expected_context_sha256=(
-            attempt_metadata.get("context_sha256") if attempt_metadata else None
-        ),
     )
     exit_data: dict[str, Any] | None = None
     try:
@@ -1377,9 +1296,6 @@ def inspect_worker(
         "managed": managed,
         "attempt_id": active["attempt_id"] if active else None,
         "phase": active["phase"] if active else None,
-        "context_sha256": (
-            attempt_metadata.get("context_sha256") if attempt_metadata else None
-        ),
         **_observer_commands(tmux_executable, tmux_socket, session),
     }
     if not exists:
@@ -1484,15 +1400,12 @@ def _attempt_result(
     exit_data = _read_json(attempt / "exit.json")
     if exit_data is None or exit_data.get("exit_code") != 0:
         raise TmuxWorkerError("active attempt does not have a completed zero exit")
-    metadata = _read_json(attempt / "attempt.json") or {}
     result = _read_result(
         attempt / "result.json",
         str(manifest["task_ref"]),
         expected_phase=str(active["phase"]),
         expected_attempt_id=str(active["attempt_id"]),
         managed=True,
-        managed_version=int(manifest["version"]),
-        expected_context_sha256=metadata.get("context_sha256"),
     )
     if result is None or result.get("status") != "checkpoint":
         raise TmuxWorkerError(
@@ -1531,41 +1444,23 @@ def _start_managed_attempt(
     )
     if resume_instruction:
         prompt_path = attempt / "prompt.txt"
-        if manifest["version"] == 3:
-            handoff = manifest["handoff"]
-            assert isinstance(handoff, Mapping)
-            context_values = dict(handoff)
-            context_values.setdefault("task", {"task_ref": manifest["task_ref"]})
-            context_values["branch_state"] = dict(live)
-            context_path, checksum = build_context(
-                attempt / "context",
-                phase=phase,
-                handoff=context_values,
-                phase_snapshot=snapshot,
-                result_path=attempt / "result.json",
-                resume_instruction=resume_instruction,
-            )
-            prompt_path.write_text(
-                context_prompt(phase, context_path, checksum, attempt / "result.json"),
-                encoding="utf-8",
-            )
-            metadata = _read_json(attempt / "attempt.json") or {}
-            metadata["context_sha256"] = checksum
-            _atomic_json(attempt / "attempt.json", metadata)
-            _atomic_json(
-                attempt / "result-schema.json",
-                _managed_result_schema(
-                    phase, version=3, context_sha256=checksum
-                ),
-            )
-        else:
-            prompt_path.write_text(
-                prompt_path.read_text(encoding="utf-8")
-                + "\nResume instruction:\n"
-                + resume_instruction.strip()
-                + "\n",
-                encoding="utf-8",
-            )
+        handoff = manifest["handoff"]
+        assert isinstance(handoff, Mapping)
+        context_values = dict(handoff)
+        context_values.setdefault("task", {"task_ref": manifest["task_ref"]})
+        context_values["branch_state"] = dict(live)
+        context_path = build_context(
+            attempt,
+            phase=phase,
+            handoff=context_values,
+            phase_snapshot=snapshot,
+            result_path=attempt / "result.json",
+            resume_instruction=resume_instruction,
+        )
+        prompt_path.write_text(
+            context_prompt(phase, context_path, attempt / "result.json"),
+            encoding="utf-8",
+        )
     previous = _active_attempt(state_dir)
     _atomic_json(
         state_dir / "active.json",
@@ -1740,15 +1635,12 @@ def _resume_managed_worker(
                 "recreating a lost managed tmux session requires caller revalidation"
             )
         completed = _read_json(attempt / "exit.json")
-        metadata = _read_json(attempt / "attempt.json") or {}
         result = _read_result(
             attempt / "result.json",
             task_ref,
             expected_phase=str(active["phase"]),
             expected_attempt_id=str(active["attempt_id"]),
             managed=True,
-            managed_version=int(manifest["version"]),
-            expected_context_sha256=metadata.get("context_sha256"),
         )
         if (
             completed is not None
@@ -2050,10 +1942,6 @@ def _run_worker(
                 expected_phase=expected_phase,
                 expected_attempt_id=expected_attempt_id,
                 managed=managed,
-                managed_version=int(manifest["version"]) if managed else 2,
-                expected_context_sha256=(
-                    attempt.get("context_sha256") if managed and attempt else None
-                ),
             )
             is not None,
         },
