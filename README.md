@@ -8,7 +8,7 @@ The Brutal planning, project review, worker, swarm, and pull-request review skil
 use a repo-local `BRUTAL.md` file to resolve one code host and one work store.
 Built-in support covers GitHub plus local files, Linear, Gitlear, and Jira;
 complete custom adapters can be described in the file. See
-[`brutal-shared/BRUTAL.example.md`](brutal-shared/BRUTAL.example.md) for the
+[`brutal-shared/BRUTAL.example.md`](skills/brutal/brutal-shared/BRUTAL.example.md) for the
 canonical shape. Legacy version-1 backend files and unambiguous prose remain
 supported.
 
@@ -137,15 +137,15 @@ request to a completed task.
 
 The planning workflow is a composable, two-gate suite:
 
-- [`brutal-plan`](brutal-plan/SKILL.md) orchestrates planning and publishes the
+- [`brutal-plan`](skills/brutal/brutal-plan/SKILL.md) orchestrates planning and publishes the
   approved parent plan and implementation tasks.
-- [`brutal-grill`](brutal-grill/SKILL.md) resolves one repo-grounded decision at
+- [`brutal-grill`](skills/brutal/brutal-grill/SKILL.md) resolves one repo-grounded decision at
   a time.
-- [`brutal-spec`](brutal-spec/SKILL.md) synthesizes and stress-tests the
+- [`brutal-spec`](skills/brutal/brutal-spec/SKILL.md) synthesizes and stress-tests the
   decision-complete specification.
-- [`brutal-tickets`](brutal-tickets/SKILL.md) produces the fewest cohesive,
+- [`brutal-tickets`](skills/brutal/brutal-tickets/SKILL.md) produces the fewest cohesive,
   decision-complete implementation scopes.
-- [`brutal-wayfinder`](brutal-wayfinder/SKILL.md) persists investigation maps
+- [`brutal-wayfinder`](skills/brutal/brutal-wayfinder/SKILL.md) persists investigation maps
   for work that needs research, prototypes, access, or multiple planning
   sessions before implementation can be specified.
 
@@ -156,10 +156,10 @@ questions use `type:investigation`, so `brutal-worker` cannot select them.
 
 ## Brutal execution
 
-- [`brutal-worker`](brutal-worker/SKILL.md) owns one exact task through an
+- [`brutal-worker`](skills/brutal/brutal-worker/SKILL.md) owns one exact task through an
   isolated worktree, one stacked pull request, and an uncapped materially clean
   Brutal review/fix loop.
-- [`brutal-swarm`](brutal-swarm/SKILL.md) asks for a concurrency cap and drains
+- [`brutal-swarm`](skills/brutal/brutal-swarm/SKILL.md) asks for a concurrency cap and drains
   a task graph through parallel workers. It defaults to one retained tmux Codex
   session per task with fresh phase-scoped Codex threads and one small context
   file per phase; `BRUTAL.md` can select native subagents instead. Independent
@@ -168,13 +168,13 @@ questions use `type:investigation`, so `brutal-worker` cannot select them.
 
 ## Brutal pull-request loops
 
-- [`brutal-pr-review`](brutal-pr-review/SKILL.md) posts provider-native,
+- [`brutal-pr-review`](skills/brutal/brutal-pr-review/SKILL.md) posts provider-native,
   individually actionable findings for the current open pull request.
-- [`brutal-pr-finding-fixer`](brutal-pr-finding-fixer/SKILL.md) fixes generated
+- [`brutal-pr-finding-fixer`](skills/brutal/brutal-pr-finding-fixer/SKILL.md) fixes generated
   findings one at a time.
-- [`brutal-pr-fix-loop`](brutal-pr-fix-loop/SKILL.md) preserves the bounded
+- [`brutal-pr-fix-loop`](skills/brutal/brutal-pr-fix-loop/SKILL.md) preserves the bounded
   three-pass review/fix behavior.
-- [`brutal-inf-fix-loop`](brutal-inf-fix-loop/SKILL.md) repeats without a pass
+- [`brutal-inf-fix-loop`](skills/brutal/brutal-inf-fix-loop/SKILL.md) repeats without a pass
   or no-progress cap until a fresh all-severity review has no CRITICAL or MAJOR
   findings. A MINOR/NIT-only pass is recorded as materially clean.
 
