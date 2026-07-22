@@ -30,8 +30,6 @@ Each ticket must:
 - depend only on work that genuinely blocks it
 - preserve a green integration state when it lands
 - give a fresh agent enough decisions and verification to finish or resume it
-- for Dot Spec work, own an exact non-overlapping set of approved requirement
-  operations and name the one pull request that activates each operation
 
 Use the fewest scopes that satisfy these conditions. Prefer a checklist inside
 one ticket over several tickets that only make sense together.
@@ -61,21 +59,12 @@ Use this body contract:
 ## Blocked By
 ## Implementation Notes
 ## Verification Commands
-## Dot Spec Operations
-## Independent Evidence
 ```
 
 Describe end-to-end behavior in `What To Build`; keep layer-by-layer detail in
 implementation notes. Use stable module and interface names rather than guessed
 paths. Make acceptance criteria externally observable and verification commands
 exact. Express dependencies as ticket titles until backend identifiers exist.
-
-For opted-in modules, include the change id, normalized delta digest, base SHA,
-applicable base-spec digests, exact `add`/`replace`/`remove` operations, public
-seams, explicit module changes, and activation responsibility. A ticket must not
-implement a partial
-requirement that becomes active before its remaining blockers. Trace every
-acceptance criterion to requirement ids and independent evidence.
 
 ## Approval Gate
 

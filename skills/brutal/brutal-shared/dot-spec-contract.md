@@ -119,15 +119,15 @@ operations:
   - op: replace
     module: billing
     requirement_id: billing.invoice-idempotency
-    ticket: ENG-431
-    activates_with: ENG-431
+    ticket: billing-idempotency
+    activates_with: billing-idempotency
     before_digest: <normalized requirement sha256>
     after:
       <complete replacement requirement>
 module_changes:
   - module: billing
-    ticket: ENG-431
-    activates_with: ENG-431
+    ticket: billing-idempotency
+    activates_with: billing-idempotency
     before_digest: <normalized maturity/authority/import/seam sha256>
     after:
       maturity: spec-driven
@@ -141,11 +141,15 @@ module_changes:
 ```
 
 Operations are `add`, `replace`, or `remove`. Module changes cover maturity,
-authority, imports, and default public seams. Each operation belongs to one
-ticket and activates in exactly one merging pull request. A cross-ticket
-requirement remains proposed until its final activating ticket. Bind every
-ticket and worker handoff to the change id, normalized delta digest, base SHA,
-and applicable base-spec digests.
+authority, imports, and default public seams. In an approved delta, `ticket`
+and `activates_with` are stable logical scope keys selected before provider
+artifacts exist. Each operation belongs to one logical ticket scope and one
+activation scope. Gate two maps those keys to approved ticket boundaries.
+Publication and worker handoff bind provider ticket and pull-request refs in
+task metadata outside the normalized semantic delta, so those refs never
+change its digest. A cross-ticket requirement remains proposed until its final
+activating scope merges. Bind every ticket and worker handoff to the change id,
+normalized delta digest, base SHA, and applicable base-spec digests.
 
 Workers may implement only the assigned operations. Any different semantic
 change, authority change, compatibility decision, or acceptance weakening

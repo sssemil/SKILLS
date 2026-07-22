@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot Project Review"
+  short_description: "Audit projects against active specs"
+  default_prompt: "Use $brutal-dot-project-review to review this project's opted-in modules against their active Dot Specs."

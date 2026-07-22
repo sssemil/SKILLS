@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot Grill"
+  short_description: "Resolve Dot Spec decisions safely"
+  default_prompt: "Use $brutal-dot-grill to resolve requirements for this opted-in Dot Spec module."

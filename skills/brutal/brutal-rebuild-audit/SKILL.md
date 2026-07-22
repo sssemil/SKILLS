@@ -62,7 +62,7 @@ Recommend `managed -> rebuildable` only when:
 - no material behavior depends on the hidden implementation
 - repeated runs satisfy the repository's reproducibility policy
 
-Promotion must be an approved semantic change merged with its audit evidence.
+Route promotion through `$brutal-dot-plan`; it must be an approved semantic change merged with its audit evidence.
 Otherwise retain `managed` and report the smallest missing knowledge or control.
 
 ## Audit Record

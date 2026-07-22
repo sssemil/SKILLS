@@ -14,7 +14,7 @@ code authoritative until selected behavior is explicitly approved and guarded.
    `dot_spec` configuration.
 2. Read applicable repository rules, ADRs, public interfaces, schemas, tests,
    migrations, operational docs, and available runtime evidence.
-3. Read `../brutal-grill/SKILL.md` and `../brutal-wayfinder/SKILL.md`.
+3. Read `../brutal-dot-grill/SKILL.md` and `../brutal-wayfinder/SKILL.md`.
 4. Require one explicit module boundary. Use wayfinding when evidence gathering,
    access, or contradiction resolution will span multiple sessions.
 
@@ -50,9 +50,9 @@ code authoritative until selected behavior is explicitly approved and guarded.
 
 ## Resolve And Guard
 
-Use `brutal-grill` to decide which candidate behaviors are intended, which are
+Use `$brutal-dot-grill` to decide which candidate behaviors are intended, which are
 compatibility obligations, which must change, and who owns each authority
-concern. Produce an approved semantic change through `brutal-plan`; do not
+concern. Produce an approved semantic change through `$brutal-dot-plan`; do not
 activate it directly.
 
 The implementation ticket that promotes `observed -> guarded` must land

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot Plan"
+  short_description: "Plan and publish Dot Spec work"
+  default_prompt: "Use $brutal-dot-plan to plan this opted-in Dot Spec change and publish its tasks."

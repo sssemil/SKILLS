@@ -25,10 +25,6 @@ the phase snapshot supplies revalidated mutable state. Runtime names, logs, and
 old snapshots are observational and grant no provider authority.
 Read only the supplied phase context file.
 
-For an opted-in module, read `../brutal-shared/dot-spec-contract.md` and require
-the handed-off change id, normalized delta digest, base SHA, base-spec digests,
-exact owned operations, activation ticket, and independent verifier.
-
 ## Hard Rules
 
 - Own only the handed-off item, branch, worktree, and pull request.
@@ -39,9 +35,6 @@ exact owned operations, activation ticket, and independent verifier.
 - Preserve unrelated changes and edit only the isolated worktree.
 - Keep the item `in_progress` until a fresh review has no CRITICAL or MAJOR.
   Then it may move to `in_review`; move it to `done` only after its PR merged.
-- Never alter an opted-in contract outside the approved operations, silently
-  change authority or compatibility, weaken acceptance evidence, or fall back
-  to ordinary Brutal behavior when Dot Spec validation fails.
 
 ## Managed Phase Protocol
 
@@ -55,9 +48,6 @@ Prove the exact claim from the expected state before changing code. Validate
 worktree, branch, base branch/SHA, and branch task marker. Implement, test,
 self-review, commit, push, and find-or-create the single marked PR. Return a
 checkpoint with current base/head, PR, verification, and zeroed review fields.
-For an activating Dot Spec ticket, update canonical spec, implementation, tests,
-and generated trace together; validate the actual normalized semantic diff
-against the handed-off digest before commit and push.
 
 ### `review`
 
@@ -86,9 +76,6 @@ snapshot still matches and checks still pass; otherwise rerun it. Record
 changed files, commands/results, commits, PR/base, review id, completion kind,
 and residual MINOR/NIT findings on the task. Move it to `in_review` and return
 terminal `clean` with `zero_findings` or `materially_clean`.
-For Dot Spec work, also record actual delta/spec digests, requirement trace,
-independent verification tied to head SHA, and whether this PR activates each
-owned operation. A semantic mismatch blocks handoff.
 
 ### `complete`
 

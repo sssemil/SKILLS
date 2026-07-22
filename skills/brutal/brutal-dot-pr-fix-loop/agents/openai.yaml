@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot PR Fix Loop"
+  short_description: "Run bounded Dot Spec PR cleanup"
+  default_prompt: "Use $brutal-dot-pr-fix-loop to run bounded review and fixes for this Dot Spec pull request."

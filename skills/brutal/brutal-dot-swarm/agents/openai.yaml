@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot Swarm"
+  short_description: "Run Dot Spec tasks with native workers"
+  default_prompt: "Use $brutal-dot-swarm to drain this Dot Spec task graph through native subagent workers."

@@ -35,13 +35,6 @@ checks: <normalized check state or null>
 stacked_on:
   task_ref: <single blocker ref or null>
   pr: <provider PR ref or null>
-dot_spec:
-  change_id: <stable id or null>
-  delta_digest: <normalized sha256 or null>
-  base_specs: <module-to-digest mapping>
-  operations: <exact ticket-owned operations>
-  activates: <requirement ids activated by this PR>
-  independent_verify: <validated command or null>
 ```
 
 Assignment identity is immutable. The runtime adapter fills its runtime fields
@@ -56,10 +49,6 @@ phase, context path, and result path, and must stay below 2 KiB.
 - `review`: acceptance criteria, diff/relevant code, checks
 - `fix`: exact finding queue
 - `handoff`: final verification and provider state
-
-Dot Spec assignment values are immutable. Mutable snapshots may report current
-actual spec/delta digests and verification evidence but never replace the
-approved assignment.
 
 ## Mutable Phase Snapshot
 

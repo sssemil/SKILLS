@@ -45,13 +45,6 @@ Provide operations to:
    `type:review-finding`, and `type:investigation`
 8. report partial writes precisely enough for resumable retry
 
-For an opted-in Dot Spec plan, preserve the approved change id, normalized
-delta digest, base SHA, base-spec digests, requirement operations, activation
-tickets, and approval record in complete bodies or opaque metadata. Adapters do
-not interpret or weaken these values. Structured requirement queries are
-optional; exact-body retrieval and source/title/parent deduplication remain
-sufficient.
-
 An adapter without a native `staged` state must use prepare-before-create:
 finish every child body and dependency reference outside the intake queue,
 then create children blocker-first only after the complete graph is ready.

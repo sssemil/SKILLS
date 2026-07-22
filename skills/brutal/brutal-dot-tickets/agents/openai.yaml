@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot Tickets"
+  short_description: "Split approved Dot Spec changes"
+  default_prompt: "Use $brutal-dot-tickets to create cohesive tickets for this approved Dot Spec delta."

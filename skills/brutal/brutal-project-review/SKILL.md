@@ -16,9 +16,6 @@ findings through the configured work-store adapter.
 3. Read repo rules from `AGENTS.md`, `CLAUDE.md`, `TARGET.md`, and referenced
    workflow docs.
 4. If `BRUTAL.md` is missing or incomplete, follow the integration setup flow.
-5. When `dot_spec` is configured, read
-   `../brutal-shared/dot-spec-contract.md` and validate the active graph before
-   subsystem discovery.
 
 ## State Rules
 
@@ -40,9 +37,6 @@ findings through the configured work-store adapter.
 4. For each selected subsystem:
    - mark it `in_progress`
    - gather relevant code, tests, migrations, APIs, configs, SQL, TOML, and docs
-   - for opted-in modules, gather canonical requirements, authorities,
-     provenance, imports, trace output, maturity evidence, approved deltas, and
-     independent verification
    - write temporary context under the resolved review-state directory
    - launch five reviewers when available: core correctness, reliability/tests,
      maintainability, performance/security, and simplification
@@ -51,11 +45,6 @@ findings through the configured work-store adapter.
    - delete temporary context before stopping or reporting
 5. Only create persisted work for validated `CRITICAL` and `MAJOR` findings by
    default.
-
-Treat unapproved semantic drift, conflicting authority, invalid imports,
-unguarded active requirements, false maturity claims, and missing activation
-evidence as correctness findings. Observed behavior that may be accidental is
-an adoption question for `brutal-observe`, not automatically a defect.
 
 ## Finding Persistence
 

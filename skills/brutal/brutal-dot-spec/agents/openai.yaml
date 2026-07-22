@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot Spec"
+  short_description: "Bind approved semantic change contracts"
+  default_prompt: "Use $brutal-dot-spec to turn these requirements into an approved Dot Spec semantic delta."

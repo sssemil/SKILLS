@@ -16,12 +16,6 @@ labels:
   task: type:task
   review_finding: type:review-finding
   investigation: type:investigation
-
-# Optional. Its presence opts in only modules listed by the manifest.
-dot_spec:
-  manifest: .dotspec/modules.yaml
-  command: dotspec
-  independent_verify: ./scripts/verify-contracts
 ---
 
 # Brutal Workflow
@@ -38,7 +32,3 @@ against the repository's primary worktree so every worker shares one queue.
 `execution.worker_runtime` accepts `tmux` or `subagent` and defaults to `tmux`
 when omitted. Use `subagent` to keep workers in the invoking Codex session's
 native collaboration tree instead of launching retained tmux sessions.
-
-When `dot_spec` is present, follow `brutal-shared/dot-spec-contract.md`. Validate
-the manifest and commands before planning or implementing an opted-in module.
-Modules absent from the manifest keep the ordinary Brutal workflow.

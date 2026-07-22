@@ -46,11 +46,6 @@ sections, or clear Markdown prose. The Markdown body may also contain workflow
 notes, verification commands, linked documentation, and a complete custom
 adapter definition.
 
-An optional `dot_spec` section enables the repository-local contract in
-`dot-spec-contract.md`. Resolve its manifest and commands independently of the
-integration roles. Absence means ordinary Brutal behavior; invalid configuration
-for an opted-in module is a hard error, not a fallback signal.
-
 ## Worker Runtime
 
 For `$brutal-swarm`, resolve `execution.worker_runtime` independently of the
@@ -115,8 +110,6 @@ Before workflow mutation, retain a normalized result containing:
 - validated tool/credential availability
 - adapter-specific safety constraints
 - resolved worker runtime when the invoking skill is `$brutal-swarm`
-- validated Dot Spec manifest, command, independent verifier, module ids,
-  maturities, authorities, and normalized digests when `dot_spec` is configured
 
 For a local work store, also retain its canonical absolute root. Resolve a
 relative `providers.local.root` against the primary worktree returned by
