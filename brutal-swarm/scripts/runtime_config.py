@@ -48,6 +48,7 @@ def resolve_worker_runtime(path: str | Path) -> dict[str, Any]:
         return {
             "runtime": DEFAULT_RUNTIME,
             "explicit": False,
+            "edit_sandbox_command": None,
             "path": str(brutal_path),
             "exists": False,
         }
@@ -59,6 +60,7 @@ def resolve_worker_runtime(path: str | Path) -> dict[str, Any]:
     if execution is None:
         runtime = DEFAULT_RUNTIME
         explicit = False
+        edit_sandbox_command = None
     else:
         if not isinstance(execution, Mapping):
             raise RuntimeConfigError("execution must be a mapping")
@@ -74,10 +76,24 @@ def resolve_worker_runtime(path: str | Path) -> dict[str, Any]:
                 )
             runtime = value
             explicit = True
+        raw_command = execution.get("edit_sandbox_command")
+        if raw_command is None:
+            edit_sandbox_command = None
+        elif (
+            not isinstance(raw_command, list)
+            or not raw_command
+            or not all(isinstance(item, str) and item for item in raw_command)
+        ):
+            raise RuntimeConfigError(
+                "execution.edit_sandbox_command must be a non-empty string array"
+            )
+        else:
+            edit_sandbox_command = list(raw_command)
 
     return {
         "runtime": runtime,
         "explicit": explicit,
+        "edit_sandbox_command": edit_sandbox_command,
         "path": str(brutal_path),
         "exists": True,
     }

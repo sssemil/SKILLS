@@ -40,6 +40,42 @@ stacked_on:
 Assignment identity is immutable. The tmux supervisor fills its runtime fields
 before launch. Runtime data grants no task, Git, or provider authority.
 
+## Context File
+
+Keep bulk phase input in run-local JSON files. The prompt contains only phase,
+context-file path, context SHA-256, and result path, and must stay below 2 KiB.
+References contain exactly `{path, sha256}`. Reject escapes, missing files, and
+checksum mismatches. Results echo `context_sha256`.
+
+- `work`: ticket, repository rules, branch state
+- `review`: acceptance criteria, diff/relevant code, checks
+- `fix`: exact finding queue
+- `handoff`: final verification and provider state
+
+## Optional Writable Directory
+
+BRUTAL.md may configure:
+
+```yaml
+execution:
+  edit_sandbox_command:
+    - safe-codex
+```
+
+A ticket may declare one repository-relative directory:
+
+```markdown
+## Writable Directory
+src/api
+```
+
+When both exist, the task worker runs `scoped_edit.py`; the child edits from
+that directory, while the task worker retains Git/provider authority and
+checks every changed path before verifying and committing. `.` allows the
+whole worktree. Missing commands, escapes, or outside changes block and
+preserve the worktree. The wrapper may still allow network and agent config or
+cache writes: this contract restricts repository writes only.
+
 ## Mutable Phase Snapshot
 
 Before every managed phase transition, re-read live provider and Git state and

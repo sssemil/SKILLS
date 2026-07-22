@@ -16,6 +16,7 @@ from pathlib import Path
 
 
 SCRIPT = Path(__file__).with_name("tmux_worker.py")
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("tmux_worker", SCRIPT)
 assert SPEC and SPEC.loader
 tmux_worker = importlib.util.module_from_spec(SPEC)
@@ -79,12 +80,14 @@ elif attempt:
         }],
     }
     common = {
-        "schema_version": 2,
+        "schema_version": 3 if attempt.get("context_sha256") else 2,
         "task_ref": task_ref,
         "summary": "fake worker result",
         "phase": attempt["phase"],
         "attempt_id": attempt["attempt_id"],
     }
+    if attempt.get("context_sha256"):
+        common["context_sha256"] = attempt["context_sha256"]
     if status == "blocked":
         result = {
             **common,
@@ -331,7 +334,7 @@ class TmuxWorkerTest(unittest.TestCase):
         self.assertTrue(first_state["session_exists"])
         self.assertTrue(second_state["session_exists"])
 
-    def test_handoff_is_resolved_into_phase_attempt(self) -> None:
+    def test_handoff_is_resolved_into_small_checksum_bound_context(self) -> None:
         handoff = self.managed_handoff()
         original = json.loads(json.dumps(handoff))
         launched = tmux_worker.launch_worker(
@@ -349,8 +352,12 @@ class TmuxWorkerTest(unittest.TestCase):
         self.assertEqual(resolved["runtime"]["state_dir"], launched["state_dir"])
         attempt_dir = state_dir / "attempts" / "000001"
         prompt = (attempt_dir / "prompt.txt").read_text()
-        self.assertIn('"task_ref": "TASK-123"', prompt)
-        self.assertIn('"immutable_assignment"', prompt)
+        self.assertLessEqual(len(prompt.encode()), 2048)
+        self.assertIn("context_file:", prompt)
+        self.assertIn("context_sha256:", prompt)
+        context = json.loads((attempt_dir / "context" / "context.json").read_text())
+        self.assertEqual(context["phase"], "work")
+        self.assertEqual(set(context["inputs"]), {"phase_snapshot", "task", "branch_state"})
         schema = json.loads(
             (attempt_dir / "result-schema.json").read_text(encoding="utf-8")
         )
@@ -361,6 +368,17 @@ class TmuxWorkerTest(unittest.TestCase):
         self.assertNotIn("completion_kind", schema["oneOf"][0]["properties"])
         self.assertEqual(inspected["result"]["status"], "checkpoint")
         self.assertEqual(inspected["phase"], "work")
+        self.assertIsNone(
+            tmux_worker._read_result(
+                attempt_dir / "result.json",
+                "TASK-123",
+                expected_phase="work",
+                expected_attempt_id="000001",
+                managed=True,
+                managed_version=3,
+                expected_context_sha256="f" * 64,
+            )
+        )
 
     def test_managed_phases_use_append_only_attempts_and_fresh_threads(self) -> None:
         launched = tmux_worker.launch_worker(
@@ -583,10 +601,8 @@ class TmuxWorkerTest(unittest.TestCase):
         self.assertIn("resume", invocation["args"])
         self.assertIn("thread-000001", invocation["args"])
         attempt = state_dir / "attempts" / "000002"
-        self.assertIn(
-            "retry interrupted phase",
-            (attempt / "prompt.txt").read_text(encoding="utf-8"),
-        )
+        context = json.loads((attempt / "context" / "context.json").read_text())
+        self.assertIn("resume_instruction", context["inputs"])
 
     def test_resume_uses_exact_recorded_thread_and_fresh_requires_revalidation(self) -> None:
         launched = self.launch()
