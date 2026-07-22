@@ -1,4 +1,4 @@
 interface:
   display_name: "Brutal Swarm"
-  short_description: "Resumable stacked-PR worker graph"
-  default_prompt: "Use $brutal-swarm to drain a task graph through isolated workers and fresh, resumable phases."
+  short_description: "Small-context stacked-PR workers"
+  default_prompt: "Use $brutal-swarm to drain a task graph through isolated workers with small phase context files."

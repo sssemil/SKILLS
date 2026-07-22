@@ -159,8 +159,9 @@ questions use `type:investigation`, so `brutal-worker` cannot select them.
   Brutal review/fix loop.
 - [`brutal-swarm`](brutal-swarm/SKILL.md) asks for a concurrency cap and drains
   a task graph through parallel workers. It defaults to one retained tmux Codex
-  session per task with fresh phase-scoped Codex threads; `BRUTAL.md` can select
-  native subagents instead. Independent roots run side by side, while
+  session per task with fresh phase-scoped Codex threads and small phase context
+  files; `BRUTAL.md` can select native subagents and an optional
+  repository write boundary. Independent roots run side by side, while
   single-blocker children target stack-ready blocker branches until those PRs
   merge.
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "Brutal Worker"
-  short_description: "One-ticket phased implementation"
-  default_prompt: "Use $brutal-worker to complete one exact BRUTAL.md task; in managed mode execute only the supplied phase."
+  short_description: "One-ticket scoped implementation"
+  default_prompt: "Use $brutal-worker to complete one exact task from its phase context and optional writable directory."

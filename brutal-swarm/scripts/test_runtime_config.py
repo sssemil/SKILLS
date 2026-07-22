@@ -24,6 +24,7 @@ class RuntimeConfigTests(unittest.TestCase):
             self.assertEqual(missing["runtime"], "tmux")
             self.assertFalse(missing["explicit"])
             self.assertFalse(missing["exists"])
+            self.assertIsNone(missing["edit_sandbox_command"])
 
             path = root / "BRUTAL.md"
             path.write_text("---\nversion: 2\n---\n", encoding="utf-8")
@@ -49,6 +50,8 @@ class RuntimeConfigTests(unittest.TestCase):
             "---\nexecution:\n  worker_runtime: process\n---\n",
             "---\nexecution:\n  worker_runtime: TMUX\n---\n",
             "---\nexecution:\n  worker_runtime: [tmux]\n---\n",
+            "---\nexecution:\n  edit_sandbox_command: safe-codex\n---\n",
+            "---\nexecution:\n  edit_sandbox_command: []\n---\n",
             "---\nexecution: [\n---\n",
             "---\nexecution:\n  worker_runtime: tmux\n",
         )
@@ -59,6 +62,16 @@ class RuntimeConfigTests(unittest.TestCase):
                     path.write_text(document, encoding="utf-8")
                     with self.assertRaises(runtime_config.RuntimeConfigError):
                         runtime_config.resolve_worker_runtime(path)
+
+    def test_resolves_edit_sandbox_command(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "BRUTAL.md"
+            path.write_text(
+                "---\nexecution:\n  edit_sandbox_command:\n    - safe-codex\n---\n",
+                encoding="utf-8",
+            )
+            resolved = runtime_config.resolve_worker_runtime(path)
+            self.assertEqual(resolved["edit_sandbox_command"], ["safe-codex"])
 
     def test_cli_returns_json(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

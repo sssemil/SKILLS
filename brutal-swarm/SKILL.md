@@ -28,7 +28,10 @@ requests.
 4. Resolve `execution.worker_runtime` with `scripts/runtime_config.py` before
    claiming or provisioning. Missing means `tmux`; accept only `tmux` or
    `subagent` and never fall back implicitly.
-5. For a local work store, resolve its canonical absolute root against the
+5. Also resolve optional `execution.edit_sandbox_command`. Use it only when the
+   ticket has `## Writable Directory`; missing either setting preserves normal
+   worker behavior.
+6. For a local work store, resolve its canonical absolute root against the
    primary worktree.
 
 ## Drain The Graph
@@ -56,6 +59,9 @@ task, ownership, PR, branch/base/head, and checks; write a mutable phase
 snapshot; then call `tmux_worker.py advance` with the active attempt id and
 revalidated snapshot. The controller derives the next phase. Never resume a
 completed checkpoint or reuse its Codex thread across phases.
+
+Managed prompts contain only the phase, context-file path, and result path.
+Bulk ticket, diff, check, and finding data stays in one run-local context file.
 
 Prioritize an interrupted same-phase resume before new work, still within the
 cap. Use exact-thread `resume` only for that interruption. Every phase and retry

@@ -58,6 +58,7 @@ Use this body contract:
 ## Acceptance Criteria
 ## Blocked By
 ## Implementation Notes
+## Writable Directory
 ## Verification Commands
 ```
 
@@ -65,6 +66,10 @@ Describe end-to-end behavior in `What To Build`; keep layer-by-layer detail in
 implementation notes. Use stable module and interface names rather than guessed
 paths. Make acceptance criteria externally observable and verification commands
 exact. Express dependencies as ticket titles until backend identifiers exist.
+
+`Writable Directory` is optional. When repository policy uses an edit sandbox,
+set it to the narrowest repository-relative directory that contains all edits;
+use `.` only when the whole worktree must be writable.
 
 ## Approval Gate
 

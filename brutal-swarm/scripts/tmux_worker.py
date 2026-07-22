@@ -18,6 +18,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
+from worker_context import build as build_context, prompt as context_prompt
+
 class TmuxWorkerError(RuntimeError):
     """A user-actionable worker identity, runtime, or process error."""
 
@@ -541,44 +543,6 @@ def _validate_live_snapshot(
     return dict(live)
 
 
-def _legacy_phase_prompt(
-    manifest: Mapping[str, Any], snapshot: Mapping[str, Any]
-) -> str:
-    handoff = manifest["handoff"]
-    assert isinstance(handoff, Mapping)
-    immutable_assignment = {
-        key: handoff.get(key)
-        for key in (
-            "mode",
-            "run_id",
-            "task_ref",
-            "task_kind",
-            "worker_runtime",
-            "runtime",
-            "work_store",
-            "code_host",
-            "worktree_path",
-            "branch",
-            "stacked_on",
-        )
-        if key in handoff
-    }
-    return (
-        "Use $brutal-worker for only this managed phase. Read only the context "
-        "required by the phase, keep the immutable assignment identity separate "
-        "from the revalidated live snapshot, and return the managed v2 result.\n\n"
-        + json.dumps(
-            {
-                "immutable_assignment": immutable_assignment,
-                "phase_snapshot": snapshot,
-            },
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n"
-    )
-
-
 def _write_attempt(
     state_dir: Path,
     manifest: Mapping[str, Any],
@@ -602,7 +566,19 @@ def _write_attempt(
         parent_attempt_id=parent_attempt_id,
     )
     prompt_path = attempt / "prompt.txt"
-    prompt = _legacy_phase_prompt(manifest, snapshot)
+    handoff = manifest["handoff"]
+    assert isinstance(handoff, Mapping)
+    context_values = dict(handoff)
+    context_values.setdefault("task", {"task_ref": manifest["task_ref"]})
+    context_values["branch_state"] = dict(live)
+    context_path = build_context(
+        attempt,
+        phase=phase,
+        handoff=context_values,
+        phase_snapshot=snapshot,
+        result_path=attempt / "result.json",
+    )
+    prompt = context_prompt(phase, context_path, attempt / "result.json")
     prompt_path.write_text(prompt, encoding="utf-8")
     os.chmod(prompt_path, 0o600)
     _atomic_json(attempt / "phase-snapshot.json", snapshot)
@@ -1468,11 +1444,21 @@ def _start_managed_attempt(
     )
     if resume_instruction:
         prompt_path = attempt / "prompt.txt"
+        handoff = manifest["handoff"]
+        assert isinstance(handoff, Mapping)
+        context_values = dict(handoff)
+        context_values.setdefault("task", {"task_ref": manifest["task_ref"]})
+        context_values["branch_state"] = dict(live)
+        context_path = build_context(
+            attempt,
+            phase=phase,
+            handoff=context_values,
+            phase_snapshot=snapshot,
+            result_path=attempt / "result.json",
+            resume_instruction=resume_instruction,
+        )
         prompt_path.write_text(
-            prompt_path.read_text(encoding="utf-8")
-            + "\nResume instruction:\n"
-            + resume_instruction.strip()
-            + "\n",
+            context_prompt(phase, context_path, attempt / "result.json"),
             encoding="utf-8",
         )
     previous = _active_attempt(state_dir)
