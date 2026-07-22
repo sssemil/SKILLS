@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot Infinite Fix Loop"
+  short_description: "Fix Dot Spec PRs until materially clean"
+  default_prompt: "Use $brutal-dot-inf-fix-loop to review and fix this Dot Spec pull request until materially clean."

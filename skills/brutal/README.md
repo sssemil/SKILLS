@@ -152,6 +152,62 @@ have both been approved. Work-store adapters stage or prepare complete tasks
 outside the worker intake queue until publication is ready. Wayfinder maps and
 questions use `type:investigation`, so `brutal-worker` cannot select them.
 
+## Opt-in Dot Spec overlay
+
+A repository can add a `dot_spec` section to `BRUTAL.md` and list opted-in
+modules in a machine-first manifest. Those modules bind planning, tickets,
+workers, reviews, and independent verification to an approved normalized
+semantic delta. Approval freezes the delta; the pull request merges canonical
+spec, code, tests, trace, and evidence atomically, so `main` never advertises
+behavior that has not landed.
+
+The overlay is implemented only by wrapper skills. The normal Brutal skills,
+shared integration contracts, and runtimes stay unchanged. The shared contract and deterministic helper live in
+[`brutal-shared/dot-spec-contract.md`](brutal-shared/dot-spec-contract.md) and
+`brutal-shared/scripts/dotspec.py`. The helper validates module ownership,
+authority, provenance, maturity, imports, guards, and approved deltas; it also
+normalizes, hashes, semantically diffs, and generates public-seam trace output.
+
+Planning wrappers:
+
+- [`brutal-dot-plan`](brutal-dot-plan/SKILL.md) composes the full planning flow.
+- [`brutal-dot-grill`](brutal-dot-grill/SKILL.md),
+  [`brutal-dot-spec`](brutal-dot-spec/SKILL.md), and
+  [`brutal-dot-tickets`](brutal-dot-tickets/SKILL.md) wrap the three planning
+  stages.
+
+Execution wrappers:
+
+- [`brutal-dot-worker`](brutal-dot-worker/SKILL.md) implements one approved
+  semantic scope.
+- [`brutal-dot-swarm`](brutal-dot-swarm/SKILL.md) uses native subagents only;
+  it fails closed for tmux because the unchanged controller invokes the normal
+  worker directly.
+
+Review wrappers:
+
+- [`brutal-dot-pr-review`](brutal-dot-pr-review/SKILL.md) checks actual semantics
+  against the approved delta.
+- [`brutal-dot-pr-finding-fixer`](brutal-dot-pr-finding-fixer/SKILL.md) keeps
+  fixes inside approved operations.
+- [`brutal-dot-pr-fix-loop`](brutal-dot-pr-fix-loop/SKILL.md) preserves the
+  bounded three-pass loop.
+- [`brutal-dot-inf-fix-loop`](brutal-dot-inf-fix-loop/SKILL.md) preserves the
+  materially clean convergence loop.
+- [`brutal-dot-project-review`](brutal-dot-project-review/SKILL.md) audits active
+  specs, evidence, and maturity across a project.
+
+Adoption and proof:
+
+- [`brutal-observe`](brutal-observe/SKILL.md) extracts evidence-backed candidate
+  specs from legacy modules.
+- [`brutal-rebuild-audit`](brutal-rebuild-audit/SKILL.md) proves clean-room
+  reconstruction without the old implementation.
+
+Modules absent from the manifest retain ordinary Brutal behavior. The maturity
+path is `code-owned -> observed -> guarded -> spec-driven -> managed ->
+rebuildable`; every promotion is an approved, evidence-backed semantic change.
+
 ## Brutal execution
 
 - [`brutal-worker`](brutal-worker/SKILL.md) owns one exact task through an

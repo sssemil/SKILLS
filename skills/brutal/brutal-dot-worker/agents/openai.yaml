@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot Worker"
+  short_description: "Implement one approved Dot Spec scope"
+  default_prompt: "Use $brutal-dot-worker to implement this exact approved Dot Spec task."

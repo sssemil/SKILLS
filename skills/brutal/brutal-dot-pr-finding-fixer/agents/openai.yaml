@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Dot PR Finding Fixer"
+  short_description: "Fix findings without semantic drift"
+  default_prompt: "Use $brutal-dot-pr-finding-fixer to fix this generated finding within the approved Dot Spec delta."
