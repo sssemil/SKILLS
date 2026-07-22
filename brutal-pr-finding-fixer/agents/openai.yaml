@@ -1,4 +1,4 @@
 interface:
   display_name: "Brutal PR Finding Fixer"
-  short_description: "Fix generated pull request findings"
-  default_prompt: "Use $brutal-pr-finding-fixer to fix the next generated pull request finding."
+  short_description: "Drain generated review occurrences"
+  default_prompt: "Use $brutal-pr-finding-fixer to fix generated review occurrences and verify the complete remaining queue."
