@@ -8,6 +8,10 @@ description: Synthesize repo evidence and resolved requirements into a reviewed,
 Turn a decision-complete requirements brief into the behavioral and technical
 contract that implementation tickets will inherit. Do not publish artifacts.
 
+When a module is opted into Dot Spec, also read
+`../brutal-shared/dot-spec-contract.md`. The approved artifact is an immutable
+semantic change contract, not an immediate edit to the active canonical spec.
+
 ## Verify The Inputs
 
 Read the requirements brief, relevant repository instructions, domain glossary,
@@ -57,6 +61,23 @@ Validate each finding against the repository, fold valid notes into the draft,
 and return every simultaneously answerable validated blocker to `brutal-grill`
 in one round. Defer a blocker when another answer can change its necessity,
 wording, or options; never expose an unvalidated finding as a user question.
+
+## Bind A Dot Spec Delta
+
+For each opted-in module, normalize the current spec and record the repository
+base SHA and base-spec digest. Express changes as requirement-level `add`,
+`replace`, or `remove` operations with authority, provenance, compatibility,
+scenarios, invariants, public seams, verification, and one activation ticket.
+Represent maturity, authority-map, import, and default-seam changes explicitly
+as module changes with the same ticket and activation discipline.
+Record the change id, schema version, approval identity, and normalized delta
+digest.
+
+Reject textual patches as the contract. Reject unknown normative behavior,
+ambiguous ownership, stale bases, cross-ticket activation without a single final
+activator, or implementation freedom that silently changes public obligations.
+Do not update the canonical default-branch spec at approval; merge of the
+implementing spec/code/tests/evidence PR activates its operations.
 
 ## Approval Gate
 

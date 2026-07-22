@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Rebuild Audit"
+  short_description: "Prove clean-room module reconstruction"
+  default_prompt: "Use $brutal-rebuild-audit to verify that this managed module is genuinely rebuildable."

@@ -16,6 +16,9 @@ requests.
 2. Resolve one work store and code host, load both support modules, and retain
    their normalized identities.
 3. Read applicable repository workflow rules.
+4. For a configured Dot Spec graph, read
+   `../brutal-shared/dot-spec-contract.md` and validate all selected task
+   digests before provisioning or claim.
 
 ## Start A Run
 
@@ -44,6 +47,8 @@ For each selected artifact:
    `scripts/tmux_worker.py` for tmux, or one persistent native collaboration
    worker for the subagent runtime. Instruct it to use `$brutal-worker` for only
    that task.
+   Include immutable Dot Spec change/base/spec digests, exact operations,
+   activation responsibility, and verifier without expanding worker scope.
 3. After handoff, do not claim, comment, transition, implement, push, review, or
    edit that task/PR. The swarm may re-read state, advance managed phases, and
    relay progress.

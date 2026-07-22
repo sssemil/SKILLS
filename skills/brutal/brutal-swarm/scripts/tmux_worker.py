@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import fcntl
 import hashlib
 import json
@@ -61,6 +62,31 @@ _FINDING_COUNTS_SCHEMA: dict[str, Any] = {
     },
 }
 
+_DOT_SPEC_RESULT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "actual_delta_digest",
+        "spec_digests",
+        "trace",
+        "evidence",
+        "activations",
+    ],
+    "properties": {
+        "actual_delta_digest": {"type": "string", "minLength": 1},
+        "spec_digests": {
+            "type": "object",
+            "additionalProperties": {"type": "string", "minLength": 1},
+        },
+        "trace": {"type": "object"},
+        "evidence": {"type": "object"},
+        "activations": {
+            "type": "object",
+            "additionalProperties": {"type": "boolean"},
+        },
+    },
+}
+
 _CHECKPOINT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -106,6 +132,7 @@ _CHECKPOINT_SCHEMA: dict[str, Any] = {
                 },
             },
         },
+        "dot_spec": _DOT_SPEC_RESULT_SCHEMA,
     },
 }
 
@@ -169,14 +196,17 @@ def _managed_phase_variant(
     }
 
 
-def _managed_result_schema(phase: str) -> dict[str, Any]:
+def _managed_result_schema(phase: str, *, require_dot_spec: bool = False) -> dict[str, Any]:
     if phase not in _PHASES:
         raise TmuxWorkerError(f"unknown managed phase: {phase}")
+    checkpoint_schema = copy.deepcopy(_CHECKPOINT_SCHEMA)
+    if require_dot_spec:
+        checkpoint_schema["required"].append("dot_spec")
     variants: list[dict[str, Any]] = []
     if phase in _CHECKPOINT_PHASES:
         variants.append(
             _managed_phase_variant(
-                phase, "checkpoint", {"checkpoint": _CHECKPOINT_SCHEMA}
+                phase, "checkpoint", {"checkpoint": checkpoint_schema}
             )
         )
     else:
@@ -190,7 +220,7 @@ def _managed_result_schema(phase: str) -> dict[str, Any]:
                 {
                     "completion_kind": {"enum": completion_kinds},
                     "cleanup_eligible": {"type": "boolean"},
-                    "result": _CHECKPOINT_SCHEMA,
+                    "result": checkpoint_schema,
                 },
             )
         )
@@ -584,7 +614,10 @@ def _write_attempt(
     _atomic_json(attempt / "phase-snapshot.json", snapshot)
     _atomic_json(
         attempt / "result-schema.json",
-        _managed_result_schema(phase),
+        _managed_result_schema(
+            phase,
+            require_dot_spec=isinstance(handoff.get("dot_spec"), Mapping),
+        ),
     )
     _atomic_json(
         attempt / "attempt.json",
@@ -679,7 +712,7 @@ def _nonnegative_integer(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
-def _valid_checkpoint(value: Any) -> bool:
+def _valid_checkpoint(value: Any, *, require_dot_spec: bool = False) -> bool:
     if not isinstance(value, dict):
         return False
     required = {
@@ -697,7 +730,9 @@ def _valid_checkpoint(value: Any) -> bool:
         "summary_posted",
         "residual_findings",
     }
-    if set(value) != required:
+    if set(value) not in (required, required | {"dot_spec"}):
+        return False
+    if require_dot_spec and "dot_spec" not in value:
         return False
     if any(
         not isinstance(value[key], str) or not value[key]
@@ -748,6 +783,30 @@ def _valid_checkpoint(value: Any) -> bool:
             return False
     if len(residuals) != counts["MINOR"] + counts["NIT"]:
         return False
+    if "dot_spec" in value:
+        dot_spec = value["dot_spec"]
+        if not isinstance(dot_spec, dict) or set(dot_spec) != {
+            "actual_delta_digest",
+            "spec_digests",
+            "trace",
+            "evidence",
+            "activations",
+        }:
+            return False
+        if not isinstance(dot_spec["actual_delta_digest"], str) or not dot_spec["actual_delta_digest"]:
+            return False
+        if not isinstance(dot_spec["spec_digests"], dict) or not all(
+            isinstance(key, str) and key and isinstance(item, str) and item
+            for key, item in dot_spec["spec_digests"].items()
+        ):
+            return False
+        if not isinstance(dot_spec["trace"], dict) or not isinstance(dot_spec["evidence"], dict):
+            return False
+        if not isinstance(dot_spec["activations"], dict) or not all(
+            isinstance(key, str) and key and isinstance(item, bool)
+            for key, item in dot_spec["activations"].items()
+        ):
+            return False
     return True
 
 
@@ -758,6 +817,7 @@ def _read_result(
     expected_phase: str | None = None,
     expected_attempt_id: str | None = None,
     managed: bool = False,
+    require_dot_spec: bool = False,
 ) -> dict[str, Any] | None:
     if not result_path.exists():
         return None
@@ -793,7 +853,9 @@ def _read_result(
         if (
             set(value) != common | {"checkpoint"}
             or value.get("phase") not in _CHECKPOINT_PHASES
-            or not _valid_checkpoint(value.get("checkpoint"))
+            or not _valid_checkpoint(
+                value.get("checkpoint"), require_dot_spec=require_dot_spec
+            )
         ):
             return None
     elif status == "clean":
@@ -816,7 +878,7 @@ def _read_result(
         ):
             return None
         if not isinstance(value.get("cleanup_eligible"), bool) or not _valid_checkpoint(
-            value.get("result")
+            value.get("result"), require_dot_spec=require_dot_spec
         ):
             return None
         counts = value["result"]["findings_by_severity"]
@@ -1274,6 +1336,9 @@ def inspect_worker(
         expected_phase=str(active["phase"]) if active else None,
         expected_attempt_id=str(active["attempt_id"]) if active else None,
         managed=managed,
+        require_dot_spec=managed
+        and isinstance(manifest.get("handoff"), Mapping)
+        and isinstance(manifest["handoff"].get("dot_spec"), Mapping),
     )
     exit_data: dict[str, Any] | None = None
     try:
@@ -1406,6 +1471,8 @@ def _attempt_result(
         expected_phase=str(active["phase"]),
         expected_attempt_id=str(active["attempt_id"]),
         managed=True,
+        require_dot_spec=isinstance(manifest.get("handoff"), Mapping)
+        and isinstance(manifest["handoff"].get("dot_spec"), Mapping),
     )
     if result is None or result.get("status") != "checkpoint":
         raise TmuxWorkerError(
@@ -1641,6 +1708,8 @@ def _resume_managed_worker(
             expected_phase=str(active["phase"]),
             expected_attempt_id=str(active["attempt_id"]),
             managed=True,
+            require_dot_spec=isinstance(manifest.get("handoff"), Mapping)
+            and isinstance(manifest["handoff"].get("dot_spec"), Mapping),
         )
         if (
             completed is not None
@@ -1942,6 +2011,9 @@ def _run_worker(
                 expected_phase=expected_phase,
                 expected_attempt_id=expected_attempt_id,
                 managed=managed,
+                require_dot_spec=managed
+                and isinstance(manifest.get("handoff"), Mapping)
+                and isinstance(manifest["handoff"].get("dot_spec"), Mapping),
             )
             is not None,
         },

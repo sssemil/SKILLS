@@ -152,6 +152,30 @@ have both been approved. Work-store adapters stage or prepare complete tasks
 outside the worker intake queue until publication is ready. Wayfinder maps and
 questions use `type:investigation`, so `brutal-worker` cannot select them.
 
+## Opt-in Dot Spec overlay
+
+A repository can add a `dot_spec` section to `BRUTAL.md` and list opted-in
+modules in a machine-first manifest. Those modules bind planning, tickets,
+workers, reviews, and independent verification to an approved normalized
+semantic delta. Approval freezes the delta; the pull request merges canonical
+spec, code, tests, trace, and evidence atomically, so `main` never advertises
+behavior that has not landed.
+
+The shared contract and deterministic helper live in
+[`brutal-shared/dot-spec-contract.md`](brutal-shared/dot-spec-contract.md) and
+`brutal-shared/scripts/dotspec.py`. The helper validates module ownership,
+authority, provenance, maturity, imports, guards, and approved deltas; it also
+normalizes, hashes, semantically diffs, and generates public-seam trace output.
+
+- [`brutal-observe`](brutal-observe/SKILL.md) moves legacy knowledge from
+  `code-owned` toward `observed` and `guarded` without canonizing accidents.
+- [`brutal-rebuild-audit`](brutal-rebuild-audit/SKILL.md) proves a `managed`
+  module can be reconstructed without access to its previous implementation.
+
+Modules absent from the manifest retain ordinary Brutal behavior. The maturity
+path is `code-owned -> observed -> guarded -> spec-driven -> managed ->
+rebuildable`; every promotion is an approved, evidence-backed semantic change.
+
 ## Brutal execution
 
 - [`brutal-worker`](brutal-worker/SKILL.md) owns one exact task through an

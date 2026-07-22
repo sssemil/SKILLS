@@ -45,6 +45,8 @@ def build(
         "inputs": {key: handoff[key] for key in PHASE_KEYS[phase] if key in handoff},
         "result_path": str(result_path),
     }
+    if "dot_spec" in handoff:
+        context["inputs"]["dot_spec"] = handoff["dot_spec"]
     if resume_instruction:
         context["resume_instruction"] = resume_instruction.strip()
     path = attempt / "context.json"

@@ -17,6 +17,8 @@ Review the exact open pull request resolved through BRUTAL.md.
 3. Require an open pull request. Never create one or substitute a local diff.
 4. Read applicable repository rules and only the docs/manifests needed to
    interpret the changed surface. Load `references/rust.md` for Rust changes.
+5. For an opted-in module, read `../brutal-shared/dot-spec-contract.md` and
+   require the exact approved change/base/spec digests and ticket operations.
 
 ## Hard Rules
 
@@ -25,6 +27,9 @@ Review the exact open pull request resolved through BRUTAL.md.
 - Stop before posting if either the base SHA or head SHA changes after context
   collection.
 - Validate every finding against the current diff and surrounding code.
+- Independently normalize the base/head spec graphs and compare their semantic
+  diff with the approved operations. Never trust a worker-supplied trace or
+  digest without recomputing it.
 - Patch only owned comments beginning with an exact canonical marker. Recognize
   legacy markers for queue compatibility but write only v2 markers.
 
@@ -40,6 +45,12 @@ When native reviewer subagents are available, launch them with
 inherit the worker’s implementation conversation. If subagents are
 unavailable, apply the same evidence isolation sequentially. Merge only
 validated structured findings.
+
+For Dot Spec work, classify semantic findings explicitly as unapproved contract
+change, stale approval base, unsatisfied activated requirement, missing or
+non-independent evidence, authority/provenance violation, trace failure, or
+ordinary implementation defect. Key independent evidence by the complete
+base/head snapshot and active spec digest.
 
 ## Review Modes
 

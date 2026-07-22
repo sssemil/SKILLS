@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brutal Observe"
+  short_description: "Adopt legacy modules into Dot Spec safely"
+  default_prompt: "Use $brutal-observe to extract evidence-backed candidate specifications from this existing module."

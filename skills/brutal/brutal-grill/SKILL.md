@@ -18,6 +18,9 @@ repository can supply.
    and prior art with `rg` and `rg --files`.
 4. Separate discoverable facts from decisions. Investigate facts; ask only for
    decisions.
+5. When the affected module is opted into Dot Spec, read
+   `../brutal-shared/dot-spec-contract.md`, validate its active spec, and
+   separate provenance, authority, maturity, and proposal state.
 
 ## Grill In Decision Rounds
 
@@ -53,6 +56,10 @@ Continue until the brief covers:
 - security, privacy, performance, observability, migration, and rollout where
   relevant
 - acceptance scenarios and 1-3 invariants
+- for opted-in modules: stable requirement ids, authority per concern,
+  provenance and evidence, compatibility classification, base-spec identity,
+  intended semantic operations, activation boundaries, and independent
+  verification seams
 
 Skip categories that have no bearing on the work. Never turn the list into a
 generic questionnaire. Resolve low-impact choices from repository precedent and
@@ -66,6 +73,10 @@ constraints, assumptions, acceptance scenarios, and unresolved decisions.
 Reference evidence instead of repeating the investigation or conversation.
 Mark the brief decision-complete only when every high-impact branch is resolved
 and the repository evidence agrees with it.
+
+For Dot Spec adoption, never treat observed behavior as desired behavior or
+place `unknown` in an active normative spec. Return unresolved evidence through
+`brutal-observe` or `brutal-wayfinder` instead of disguising it as an assumption.
 
 Do not persist planning artifacts or edit glossary and ADR files. Pass proposed
 domain-language or architectural changes to `brutal-spec` for approval.

@@ -79,6 +79,19 @@ elif attempt:
             "location": None,
         }],
     }
+    context = json.loads((output.parent / "context.json").read_text())
+    dot_assignment = context.get("inputs", {}).get("dot_spec")
+    if isinstance(dot_assignment, dict):
+        checkpoint["dot_spec"] = {
+            "actual_delta_digest": dot_assignment["delta_digest"],
+            "spec_digests": dot_assignment["base_specs"],
+            "trace": {"trace": []},
+            "evidence": {"passed": True},
+            "activations": {
+                requirement_id: True
+                for requirement_id in dot_assignment.get("activates", [])
+            },
+        }
     common = {
         "schema_version": 2,
         "task_ref": task_ref,
@@ -203,6 +216,14 @@ class TmuxWorkerTest(unittest.TestCase):
             "pull_request": None,
             "checks": None,
             "stacked_on": {"task_ref": None, "pr": None},
+            "dot_spec": {
+                "change_id": "dot-7",
+                "delta_digest": "approved-digest",
+                "base_specs": {"billing": "base-digest"},
+                "operations": [{"op": "replace", "requirement_id": "billing.idempotency"}],
+                "activates": ["billing.idempotency"],
+                "independent_verify": ["./scripts/verify-contracts"],
+            },
         }
 
     def phase_snapshot(self, **live_updates: object) -> dict[str, object]:
@@ -354,7 +375,8 @@ class TmuxWorkerTest(unittest.TestCase):
         self.assertIn("context_file:", prompt)
         context = json.loads((attempt_dir / "context.json").read_text())
         self.assertEqual(context["phase"], "work")
-        self.assertEqual(set(context["inputs"]), {"task", "branch_state"})
+        self.assertEqual(set(context["inputs"]), {"task", "branch_state", "dot_spec"})
+        self.assertEqual(context["inputs"]["dot_spec"], handoff["dot_spec"])
         schema = json.loads(
             (attempt_dir / "result-schema.json").read_text(encoding="utf-8")
         )
@@ -363,7 +385,15 @@ class TmuxWorkerTest(unittest.TestCase):
             schema["oneOf"][0]["properties"]["status"], {"const": "checkpoint"}
         )
         self.assertNotIn("completion_kind", schema["oneOf"][0]["properties"])
+        self.assertIn(
+            "dot_spec",
+            schema["oneOf"][0]["properties"]["checkpoint"]["required"],
+        )
         self.assertEqual(inspected["result"]["status"], "checkpoint")
+        self.assertEqual(
+            inspected["result"]["checkpoint"]["dot_spec"]["actual_delta_digest"],
+            "approved-digest",
+        )
         self.assertEqual(inspected["phase"], "work")
 
     def test_managed_phases_use_append_only_attempts_and_fresh_threads(self) -> None:
@@ -518,6 +548,31 @@ class TmuxWorkerTest(unittest.TestCase):
                 revalidated=True,
                 codex_bin=str(self.fake_codex),
             )
+
+    def test_managed_checkpoint_accepts_structured_dot_spec_evidence(self) -> None:
+        checkpoint = {
+            "branch": self.branch,
+            "head_sha": self.head,
+            "base_branch": "main",
+            "base_sha": self.head,
+            "pull_request": "PR-123",
+            "verification_head": self.head,
+            "verification_summary": "verified",
+            "review_id": None,
+            "findings_by_severity": {"CRITICAL": 0, "MAJOR": 0, "MINOR": 0, "NIT": 0},
+            "queued_finding_count": 0,
+            "unhandled_finding_count": 0,
+            "summary_posted": False,
+            "residual_findings": [],
+            "dot_spec": {
+                "actual_delta_digest": "actual-digest",
+                "spec_digests": {"billing": "spec-digest"},
+                "trace": {"trace": []},
+                "evidence": {"passed": True},
+                "activations": {"billing.idempotency": True},
+            },
+        }
+        self.assertTrue(tmux_worker._valid_checkpoint(checkpoint))
 
     def test_managed_transition_lock_rejects_concurrent_restart(self) -> None:
         launched = tmux_worker.launch_worker(

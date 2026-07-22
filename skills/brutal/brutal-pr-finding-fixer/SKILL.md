@@ -28,6 +28,10 @@ Drain generated provider findings, not work-store issues.
 - Stop on verification failure, push rejection, stale/ambiguous PR identity,
   incomplete thread state, changed base identity, or inherited safety guards.
 - Mark invalid, stale, or already-fixed occurrences skipped without a commit.
+- For an opted-in module, never fix a finding by changing canonical semantics,
+  authority, compatibility, activation ownership, or mandatory verification
+  outside the approved Dot Spec operations. Return semantic changes to planning
+  and reapproval.
 
 ## Queue Identity
 

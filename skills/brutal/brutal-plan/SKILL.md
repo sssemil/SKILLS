@@ -19,6 +19,9 @@ and the user-facing checkpoints compact.
    referenced workflow documents.
 4. If a completed investigation map is supplied, read its decisions and assets
    and retain a link to it in the specification.
+5. If `BRUTAL.md` configures `dot_spec`, read
+   `../brutal-shared/dot-spec-contract.md` and validate the opted-in module graph
+   before the first approval gate.
 
 ## Choose The Route
 
@@ -36,6 +39,8 @@ investigation map.
    compact gate-one summary: outcome, scope, key decisions, material risks, and
    acceptance criteria. Obtain explicit approval. Show the full specification
    only when the user asks for it.
+   For opted-in modules, approval freezes the base-bound normalized semantic
+   delta and its digest; it does not mutate the active canonical spec.
 3. Apply `brutal-tickets` and present a compact gate-two graph with one line per
    cohesive scope: delivered outcome and genuine blockers. Obtain explicit
    approval of scope boundaries, granularity, blocking edges, and coverage.
@@ -60,7 +65,10 @@ intake queue. If publication fails, stop, keep unpromoted work outside intake,
 report every completed and missing write, and resume from that inventory.
 
 The parent body contains the approved specification, completed-map reference if
-any, child graph, plan-level acceptance criteria, and known risks. Every child
+any, child graph, plan-level acceptance criteria, and known risks. A Dot Spec
+parent also contains the change id, schema version, approval record, base SHA,
+base-spec digests, normalized delta digest, and complete requirement operations.
+Every child
 body follows the `brutal-tickets` contract and mirrors its parent and blockers
 even when native relationships exist.
 
